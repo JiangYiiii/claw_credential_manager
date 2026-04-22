@@ -1,0 +1,26 @@
+# OpenClaw HTTP integration example
+# Add this to your OpenClaw configuration
+
+credentials:
+  # HTTP mode - simple REST API
+  provider: "http"
+  endpoint: "http://127.0.0.1:8765"
+  api_key: "${CLAW_API_KEY}"  # Load from environment variable
+
+  # Optional: specific entries to prefetch
+  prefetch:
+    - "github-token"
+    - "openai-api"
+    - "slack-bot-token"
+
+# Usage in OpenClaw tasks
+tasks:
+  - name: "GitHub API interaction"
+    credentials_required:
+      - "github-token"
+    # OpenClaw will automatically fetch the credential before running the task
+
+  - name: "OpenAI completion"
+    credentials_required:
+      - "openai-api"
+    # Access via environment or context variables

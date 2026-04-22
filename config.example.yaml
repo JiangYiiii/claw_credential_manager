@@ -1,0 +1,29 @@
+server:
+  bind: "127.0.0.1:8765"
+  tls_cert: ""  # Optional: path to TLS certificate
+  tls_key: ""   # Optional: path to TLS key
+
+vault:
+  backend: "kdbx"
+  path: "~/.local/share/claw-vault/credentials.kdbx"
+  unlock:
+    key_file: "~/.local/state/claw-vault/.vault-key"  # chmod 0400
+    env_var: "CLAW_VAULT_PASSWORD"  # Alternative to key_file
+
+auth:
+  api_key: "${CLAW_API_KEY}"  # Load from environment variable
+
+policy:
+  # Entry allowlist patterns (glob-style)
+  # Empty list = deny all (security by default)
+  # Use patterns like "github-*", "openai-*", or specific IDs
+  entry_allowlist:
+    - "github-*"
+    - "openai-api"
+    - "slack-*"
+
+security:
+  rate_limit:
+    requests_per_minute: 60
+    auth_failures_max: 5
+    lockout_duration: "5m"

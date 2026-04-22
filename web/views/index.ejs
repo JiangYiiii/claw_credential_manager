@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #2c3e50;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .entries-list {
+            margin-top: 20px;
+        }
+
+        .entry-card {
+            border: 1px solid #e0e0e0;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: box-shadow 0.3s;
+        }
+
+        .entry-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .entry-info h3 {
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .entry-meta {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .entry-meta span {
+            margin-right: 15px;
+        }
+
+        .entry-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .modal-header h2 {
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #e8f4f8;
+            color: #3498db;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .tag.type-password {
+            background: #fef5e7;
+            color: #f39c12;
+        }
+
+        .tag.type-token {
+            background: #e8f8f5;
+            color: #16a085;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #95a5a6;
+        }
+
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #95a5a6;
+        }
+
+        .error-message {
+            background: #fef5e7;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .password-field {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            user-select: none;
+            color: #95a5a6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 <%= title %></h1>
+            <button class="btn btn-primary" onclick="showCreateModal()">+ 新建凭证</button>
+        </div>
+
+        <div class="content">
+            <div id="error-container"></div>
+            <div id="entries-container" class="loading">加载中...</div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div id="entry-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">新建凭证</h2>
+            </div>
+            <form id="entry-form">
+                <input type="hidden" id="entry-id-hidden">
+
+                <div class="form-group">
+                    <label for="entry-id">ID *</label>
+                    <input type="text" id="entry-id" required placeholder="例如: github-token">
+                </div>
+
+                <div class="form-group">
+                    <label for="entry-name">名称 *</label>
+                    <input type="text" id="entry-name" required placeholder="例如: GitHub API Token">
+                </div>
+
+                <div class="form-group">
+                    <label for="entry-type">类型 *</label>
+                    <select id="entry-type" required>
+                        <option value="password">密码</option>
+                        <option value="token">Token</option>
+                        <option value="mixed">混合</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="entry-username">用户名</label>
+                    <input type="text" id="entry-username" placeholder="可选">
+                </div>
+
+                <div class="form-group password-field">
+                    <label for="entry-password">密码/Token *</label>
+                    <input type="password" id="entry-password" required placeholder="密码或 Token 值">
+                    <span class="password-toggle" onclick="togglePassword()">👁️</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="entry-tags">标签（逗号分隔）</label>
+                    <input type="text" id="entry-tags" placeholder="例如: github, api">
+                </div>
+
+                <div class="form-group">
+                    <label for="entry-notes">备注</label>
+                    <textarea id="entry-notes" placeholder="可选的备注信息"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let entries = [];
+        let isEditMode = false;
+
+        // Load entries on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadEntries();
+        });
+
+        async function loadEntries() {
+            try {
+                const response = await fetch('/api/entries');
+                const data = await response.json();
+                entries = data.entries || [];
+                renderEntries();
+            } catch (err) {
+                showError('加载凭证失败: ' + err.message);
+            }
+        }
+
+        function renderEntries() {
+            const container = document.getElementById('entries-container');
+
+            if (entries.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <h3>还没有凭证</h3>
+                        <p>点击右上角的"新建凭证"按钮开始添加</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="entries-list">
+                    ${entries.map(entry => `
+                        <div class="entry-card">
+                            <div class="entry-info">
+                                <h3>${escapeHtml(entry.name)}</h3>
+                                <div class="entry-meta">
+                                    <span>ID: ${escapeHtml(entry.id)}</span>
+                                    <span class="tag type-${entry.type}">${entry.type}</span>
+                                    ${entry.username ? `<span>用户: ${escapeHtml(entry.username)}</span>` : ''}
+                                    ${entry.tags && entry.tags.length > 0 ? entry.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('') : ''}
+                                </div>
+                            </div>
+                            <div class="entry-actions">
+                                <button class="btn btn-primary" onclick="editEntry('${escapeHtml(entry.id)}')">编辑</button>
+                                <button class="btn btn-danger" onclick="deleteEntry('${escapeHtml(entry.id)}', '${escapeHtml(entry.name)}')">删除</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function showCreateModal() {
+            isEditMode = false;
+            document.getElementById('modal-title').textContent = '新建凭证';
+            document.getElementById('entry-form').reset();
+            document.getElementById('entry-id-hidden').value = '';
+            document.getElementById('entry-id').disabled = false;
+            document.getElementById('entry-modal').classList.add('active');
+        }
+
+        async function editEntry(id) {
+            try {
+                const response = await fetch(`/api/entries/${id}`);
+                if (!response.ok) throw new Error('获取凭证失败');
+
+                const entry = await response.json();
+                isEditMode = true;
+
+                document.getElementById('modal-title').textContent = '编辑凭证';
+                document.getElementById('entry-id-hidden').value = entry.id;
+                document.getElementById('entry-id').value = entry.id;
+                document.getElementById('entry-id').disabled = true;
+                document.getElementById('entry-name').value = entry.name;
+                document.getElementById('entry-type').value = entry.type;
+                document.getElementById('entry-username').value = entry.username || '';
+                document.getElementById('entry-password').value = entry.password || '';
+                document.getElementById('entry-tags').value = entry.tags ? entry.tags.join(', ') : '';
+                document.getElementById('entry-notes').value = entry.notes || '';
+
+                document.getElementById('entry-modal').classList.add('active');
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        async function deleteEntry(id, name) {
+            if (!confirm(`确定要删除凭证 "${name}" 吗？此操作不可恢复。`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/entries/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || '删除失败');
+                }
+
+                await loadEntries();
+                showSuccess('凭证已删除');
+            } catch (err) {
+                showError('删除失败: ' + err.message);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('entry-modal').classList.remove('active');
+        }
+
+        document.getElementById('entry-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById('entry-id-hidden').value || document.getElementById('entry-id').value;
+            const tags = document.getElementById('entry-tags').value
+                .split(',')
+                .map(t => t.trim())
+                .filter(t => t);
+
+            const entry = {
+                id,
+                name: document.getElementById('entry-name').value,
+                type: document.getElementById('entry-type').value,
+                username: document.getElementById('entry-username').value,
+                password: document.getElementById('entry-password').value,
+                tags,
+                notes: document.getElementById('entry-notes').value
+            };
+
+            try {
+                const url = isEditMode ? `/api/entries/${id}` : '/api/entries';
+                const method = isEditMode ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(entry)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || '保存失败');
+                }
+
+                closeModal();
+                await loadEntries();
+                showSuccess(isEditMode ? '凭证已更新' : '凭证已创建');
+            } catch (err) {
+                showError('保存失败: ' + err.message);
+            }
+        });
+
+        function togglePassword() {
+            const input = document.getElementById('entry-password');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        function showError(message) {
+            const container = document.getElementById('error-container');
+            container.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+            setTimeout(() => { container.innerHTML = ''; }, 5000);
+        }
+
+        function showSuccess(message) {
+            // Simple success notification (you can enhance this)
+            alert(message);
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Close modal on outside click
+        document.getElementById('entry-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'entry-modal') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

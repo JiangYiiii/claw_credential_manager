@@ -1,0 +1,21 @@
+{
+  "name": "claw-credential-manager-web",
+  "version": "1.0.0",
+  "description": "Web UI for Claw Credential Manager",
+  "main": "standalone-server.js",
+  "scripts": {
+    "start": "node standalone-server.js",
+    "dev": "nodemon standalone-server.js"
+  },
+  "keywords": ["credentials", "vault", "openclaw"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "ejs": "^3.1.9",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

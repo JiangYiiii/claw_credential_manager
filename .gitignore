@@ -1,0 +1,47 @@
+# Binaries
+claw-vault-server
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries
+*.test
+*.out
+
+# Vault files
+*.kdbx
+*.kdbx.tmp
+.vault-key
+
+# Config files with secrets
+config.yaml
+config.local.yaml
+
+# Logs
+*.log
+
+# Local agent settings (may contain tokens / machine paths)
+.claude/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scripts directory
+scripts/
+
+# Build artifacts
+dist/
+build/
+
+# Node
+node_modules/

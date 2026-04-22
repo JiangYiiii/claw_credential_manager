@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "claw-credentials": {
+      "command": "/path/to/claw-vault-server",
+      "args": ["-mcp"],
+      "env": {
+        "CLAW_VAULT_PASSWORD": "${MASTER_PASSWORD}"
+      }
+    }
+  }
+}
