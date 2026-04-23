@@ -180,12 +180,12 @@ app.post('/api/export-cookies', async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, '127.0.0.1', () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`
 ========================================
 Claw Credential Manager - Web UI
 ========================================
-Web UI:     http://127.0.0.1:${PORT}
+Web UI:     http://0.0.0.0:${PORT}
 API Proxy:  ${API_BASE}
 ========================================
   `);
