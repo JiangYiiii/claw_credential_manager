@@ -90,9 +90,11 @@ func expandPath(path string) string {
 }
 
 func (c *Config) Validate() error {
-	// Validate bind address
-	if !strings.HasPrefix(c.Server.Bind, "127.0.0.1:") && !strings.HasPrefix(c.Server.Bind, "localhost:") {
-		return fmt.Errorf("server.bind must be localhost or 127.0.0.1, got: %s", c.Server.Bind)
+	// Validate bind address (allow 0.0.0.0 for Docker/Podman environments)
+	if !strings.HasPrefix(c.Server.Bind, "127.0.0.1:") &&
+	   !strings.HasPrefix(c.Server.Bind, "localhost:") &&
+	   !strings.HasPrefix(c.Server.Bind, "0.0.0.0:") {
+		return fmt.Errorf("server.bind must be localhost, 127.0.0.1, or 0.0.0.0, got: %s", c.Server.Bind)
 	}
 
 	// Validate vault backend

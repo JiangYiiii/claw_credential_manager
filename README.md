@@ -8,6 +8,7 @@
 - ✅ **KeePass 兼容**：使用 `.kdbx` 格式，可与 KeePassXC 互操作
 - ✅ **多种访问方式**：支持 HTTP API、MCP (stdio) 和 **Web UI**
 - ✅ **Web 管理界面**：现代化的浏览器界面，轻松管理凭证
+- ✅ **Chrome Cookie 导出**：从浏览器导出登录态，避免单点登录冲突
 - ✅ **最小权限**：Entry allowlist 白名单机制
 - ✅ **自动刷新**：可配置脚本自动刷新过期 Token
 - ✅ **安全加固**：速率限制、失败锁定、审计日志
@@ -227,6 +228,43 @@ Content-Type: application/json
 ```bash
 DELETE /entries/{id}
 ```
+
+## Chrome Cookie 导出
+
+从浏览器导出 cookies 到凭证管理器，让 AI Agent 复用你的登录状态（避免单点登录互踢）。
+
+详细文档：[scripts/README.md](scripts/README.md)
+
+### 快速开始
+
+1. **安装依赖**
+   ```bash
+   cd scripts
+   npm install
+   ```
+
+2. **创建启动器**
+   ```bash
+   ./create-app.sh
+   ```
+
+3. **启动 Chrome Debug**
+   - 在 Alfred/Spotlight 搜索 `Chrome Debug`
+   - 或双击 `~/Applications/Chrome Debug.app`
+
+4. **登录网站** 后运行导出
+   ```bash
+   ./export-all-cookies.sh
+   ```
+
+5. **在 OpenClaw 中使用**
+   ```javascript
+   const credential = await mcpClient.callTool('get_credential', {
+     id: 'github-cookies'
+   });
+   const cookies = JSON.parse(credential.password);
+   await context.addCookies(cookies);
+   ```
 
 ## MCP 集成
 

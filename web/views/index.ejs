@@ -77,6 +77,11 @@
             background: #7f8c8d;
         }
 
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .content {
             background: white;
             padding: 30px;
@@ -259,7 +264,10 @@
     <div class="container">
         <div class="header">
             <h1>🔐 <%= title %></h1>
-            <button class="btn btn-primary" onclick="showCreateModal()">+ 新建凭证</button>
+            <div>
+                <button class="btn btn-secondary" onclick="exportCookies()" style="margin-right: 10px;">🍪 导出 Cookies</button>
+                <button class="btn btn-primary" onclick="showCreateModal()">+ 新建凭证</button>
+            </div>
         </div>
 
         <div class="content">
@@ -511,6 +519,53 @@
                 "'": '&#039;'
             };
             return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Export cookies from Chrome Debug
+        async function exportCookies() {
+            const exportBtn = event.target;
+            const originalText = exportBtn.textContent;
+
+            try {
+                exportBtn.disabled = true;
+                exportBtn.textContent = '⏳ 导出中...';
+
+                const response = await fetch('/api/export-cookies', {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || '导出失败');
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const stats = result.stats;
+                    if (stats.success === 0) {
+                        alert('⚠️ 没有找到任何 cookies\n\n请确保:\n1. Chrome Debug 正在运行\n2. 在 Chrome Debug 中访问并登录网站\n3. 然后再点击导出按钮');
+                    } else {
+                        const message = `✅ 导出完成！\n\n成功: ${stats.success}\n失败: ${stats.failed}\n跳过: ${stats.skipped}`;
+                        alert(message);
+
+                        // 重新加载列表
+                        await loadEntries();
+                    }
+                } else {
+                    throw new Error(result.message || '导出失败');
+                }
+            } catch (err) {
+                const errorMsg = err.message || '未知错误';
+                if (errorMsg.includes('没有找到任何 cookies')) {
+                    alert('⚠️ 没有找到任何 cookies\n\n请先:\n1. 启动 Chrome Debug（Alfred 搜索 "Chrome Debug"）\n2. 在 Chrome 中访问并登录网站（如 fintopia.tech）\n3. 然后再点击导出按钮');
+                } else {
+                    showError('导出失败: ' + errorMsg);
+                }
+            } finally {
+                exportBtn.disabled = false;
+                exportBtn.textContent = originalText;
+            }
         }
 
         // Close modal on outside click

@@ -39,6 +39,11 @@ func (b *KDBXBackend) Open(password string) error {
 		return b.createNewDatabase()
 	}
 
+	return b.loadDatabaseLocked()
+}
+
+// loadDatabaseLocked reloads the database from disk (caller must hold lock)
+func (b *KDBXBackend) loadDatabaseLocked() error {
 	// Open existing database
 	file, err := os.Open(b.filePath)
 	if err != nil {
@@ -47,7 +52,7 @@ func (b *KDBXBackend) Open(password string) error {
 	defer file.Close()
 
 	db := gokeepasslib.NewDatabase()
-	db.Credentials = gokeepasslib.NewPasswordCredentials(password)
+	db.Credentials = gokeepasslib.NewPasswordCredentials(b.password)
 
 	if err := gokeepasslib.NewDecoder(file).Decode(db); err != nil {
 		return fmt.Errorf("decode kdbx: %w", err)
@@ -84,8 +89,13 @@ func (b *KDBXBackend) Close() error {
 }
 
 func (b *KDBXBackend) ListEntries() ([]*models.EntryListItem, error) {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	// Reload database to get latest data
+	if err := b.loadDatabaseLocked(); err != nil {
+		return nil, fmt.Errorf("reload database: %w", err)
+	}
 
 	if b.db == nil {
 		return nil, fmt.Errorf("database not opened")
@@ -106,8 +116,13 @@ func (b *KDBXBackend) ListEntries() ([]*models.EntryListItem, error) {
 }
 
 func (b *KDBXBackend) GetEntry(id string) (*models.Entry, error) {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	// Reload database to get latest data
+	if err := b.loadDatabaseLocked(); err != nil {
+		return nil, fmt.Errorf("reload database: %w", err)
+	}
 
 	if b.db == nil {
 		return nil, fmt.Errorf("database not opened")

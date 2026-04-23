@@ -129,6 +129,56 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Export cookies from Chrome Debug
+app.post('/api/export-cookies', async (req, res) => {
+  const { exec } = require('child_process');
+  const util = require('util');
+  const execPromise = util.promisify(exec);
+
+  try {
+    const scriptsDir = path.join(__dirname, '..', 'scripts');
+    const exportScript = path.join(scriptsDir, 'export-all-cookies.sh');
+
+    // 检查脚本是否存在
+    if (!require('fs').existsSync(exportScript)) {
+      return res.status(404).json({
+        error: 'Export script not found',
+        path: exportScript
+      });
+    }
+
+    // 执行导出脚本
+    const { stdout, stderr } = await execPromise(exportScript, {
+      cwd: scriptsDir,
+      env: { ...process.env, CLAW_API_KEY: API_KEY }
+    });
+
+    // 解析输出
+    const output = stdout + stderr;
+    const successMatch = output.match(/✅ 成功: (\d+)/);
+    const failMatch = output.match(/❌ 失败: (\d+)/);
+    const skipMatch = output.match(/⏭️  跳过: (\d+)/);
+
+    res.json({
+      success: true,
+      message: 'Cookies exported successfully',
+      stats: {
+        success: successMatch ? parseInt(successMatch[1]) : 0,
+        failed: failMatch ? parseInt(failMatch[1]) : 0,
+        skipped: skipMatch ? parseInt(skipMatch[1]) : 0
+      },
+      output: output
+    });
+  } catch (err) {
+    console.error('Export cookies error:', err);
+    res.status(500).json({
+      error: 'Failed to export cookies',
+      message: err.message,
+      details: err.stderr || err.stdout
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, '127.0.0.1', () => {
   console.log(`

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/jiangyi/claw-credential-manager/internal/audit"
 	"github.com/jiangyi/claw-credential-manager/internal/vault"
@@ -254,5 +255,37 @@ func (s *Server) toolUpdateCredential(id string, entry *models.Entry) (interface
 				"text": fmt.Sprintf("Updated credential: %s", entry.Name),
 			},
 		},
+	}, nil
+}
+
+func (s *Server) toolGetCredentialByDomain(domain string) (interface{}, error) {
+	// Extract first part of domain (before first dot)
+	// e.g., grafana.fintopia.tech -> grafana
+	parts := strings.Split(domain, ".")
+	if len(parts) == 0 {
+		return nil, fmt.Errorf("invalid domain: %s", domain)
+	}
+	
+	prefix := parts[0]
+	credentialID := prefix + "-cookies"
+	
+	// Try to get the credential
+	entry, err := s.service.GetEntry(credentialID)
+	if err != nil {
+		s.audit.LogAccess("mcp", "get_by_domain", domain, false)
+		return nil, fmt.Errorf("no credential found for domain %s (tried ID: %s)", domain, credentialID)
+	}
+	
+	s.audit.LogAccess("mcp", "get_by_domain", domain, true)
+	
+	return map[string]interface{}{
+		"content": []interface{}{
+			map[string]interface{}{
+				"type": "text",
+				"text": fmt.Sprintf("Found credential for domain %s: %s (ID: %s)", domain, entry.Name, credentialID),
+			},
+		},
+		"entry": entry,
+		"matched_id": credentialID,
 	}, nil
 }
