@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 350px;
+      padding: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    h3 {
+      margin: 0 0 15px 0;
+      color: #333;
+    }
+    .config {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+      color: #666;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    button:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+    }
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .status.info {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+  </style>
+</head>
+<body>
+  <h3>🍪 导出 Cookies</h3>
+
+  <div class="config">
+    <label>API 地址</label>
+    <input type="text" id="apiBase" value="http://localhost:8002" placeholder="http://localhost:8002">
+  </div>
+
+  <div class="config">
+    <label>API Key</label>
+    <input type="text" id="apiKey" value="d59df52d3a8b6e9843c2632e9a8440aa59d68b649018cf30fb64112c323d7124" placeholder="API Key">
+  </div>
+
+  <button id="exportBtn">导出当前域名的 Cookies</button>
+  <button id="exportAllBtn" style="margin-top: 8px;">导出所有域名的 Cookies</button>
+
+  <div id="status"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

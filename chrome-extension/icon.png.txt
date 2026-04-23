@@ -1,0 +1,6 @@
+需要一个 icon.png 图标文件 (128x128)
+您可以使用任何图标，或者访问这些网站生成：
+- https://www.flaticon.com/
+- https://icons8.com/
+
+暂时可以复制任何 PNG 图片重命名为 icon.png 放到此目录

@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Claw Cookie Exporter",
+  "version": "1.0.0",
+  "description": "导出浏览器 Cookies 到 Claw Credential Manager",
+  "permissions": [
+    "cookies",
+    "tabs",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

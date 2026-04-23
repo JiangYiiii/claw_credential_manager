@@ -1,7 +1,8 @@
 #!/bin/bash
 # 批量导出所有域名的 cookies 到凭证管理器
 
-API_KEY="${CLAW_API_KEY:-claw_1776839434829992000}"
+API_KEY="${CLAW_API_KEY:-d59df52d3a8b6e9843c2632e9a8440aa59d68b649018cf30fb64112c323d7124}"
+API_BASE="${CLAW_API_BASE:-http://127.0.0.1:8002}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "=========================================="
@@ -73,7 +74,7 @@ for domain in $DOMAINS; do
     # 转义 TOKEN
     ESCAPED_TOKEN=$(echo "$TOKEN" | jq -Rs .)
 
-    RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://127.0.0.1:8765/entries \
+    RESPONSE=$(curl -s -w "\n%{http_code}" -X POST $API_BASE/entries \
       -H "Authorization: Bearer $API_KEY" \
       -H "Content-Type: application/json" \
       -d "{
@@ -100,7 +101,7 @@ for domain in $DOMAINS; do
     elif ([ "$HTTP_CODE" = "400" ] || [ "$HTTP_CODE" = "500" ]) && echo "$BODY" | grep -q "already exists"; then
         echo "⚠️  已存在，尝试更新..."
 
-        UPDATE_RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT http://127.0.0.1:8765/entries/$ENTRY_ID \
+        UPDATE_RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT $API_BASE/entries/$ENTRY_ID \
           -H "Authorization: Bearer $API_KEY" \
           -H "Content-Type: application/json" \
           -d "{
