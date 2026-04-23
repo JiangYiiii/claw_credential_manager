@@ -1,0 +1,20 @@
+{
+  "name": "claw-chrome-cookie-exporter",
+  "version": "1.0.0",
+  "description": "Export cookies from Chrome to Claw Credential Manager",
+  "scripts": {
+    "setup": "./create-app.sh",
+    "export": "./export-all-cookies.sh"
+  },
+  "dependencies": {
+    "puppeteer-core": "^21.11.0"
+  },
+  "keywords": [
+    "chrome",
+    "cookies",
+    "export",
+    "credential-manager"
+  ],
+  "author": "Claw Project",
+  "license": "MIT"
+}
