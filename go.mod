@@ -1,6 +1,6 @@
 module github.com/jiangyi/claw-credential-manager
 
-go 1.26.2
+go 1.23
 
 require (
 	github.com/google/uuid v1.6.0
