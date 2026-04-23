@@ -20,6 +20,12 @@ func NewAuthMiddleware(apiKey string) *AuthMiddleware {
 
 func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip authentication for health check endpoint
+		if r.URL.Path == "/health" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		auth := r.Header.Get("Authorization")
 		if auth == "" {
 			http.Error(w, "missing authorization header", http.StatusUnauthorized)
