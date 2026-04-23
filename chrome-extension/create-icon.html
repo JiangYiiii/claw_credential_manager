@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>生成扩展图标</title>
+</head>
+<body>
+    <canvas id="canvas" width="128" height="128"></canvas>
+    <br>
+    <button onclick="download()">下载图标</button>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 背景
+        ctx.fillStyle = '#3498db';
+        ctx.fillRect(0, 0, 128, 128);
+        
+        // Cookie 图标 🍪
+        ctx.font = 'bold 80px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🍪', 64, 64);
+        
+        function download() {
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'icon.png';
+                a.click();
+            });
+        }
+    </script>
+</body>
+</html>
