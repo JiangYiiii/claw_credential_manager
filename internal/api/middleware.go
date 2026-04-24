@@ -192,7 +192,21 @@ func NewCORSMiddleware() *CORSMiddleware {
 
 func (m *CORSMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:*")
+		origin := r.Header.Get("Origin")
+
+		// Allow local development and Chrome extensions
+		if origin != "" {
+			if strings.HasPrefix(origin, "http://localhost:") ||
+			   strings.HasPrefix(origin, "http://127.0.0.1:") ||
+			   strings.HasPrefix(origin, "chrome-extension://") ||
+			   strings.HasPrefix(origin, "moz-extension://") {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+			}
+		} else {
+			// If no Origin header, allow localhost (for curl/direct API calls)
+			w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:*")
+		}
+
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 

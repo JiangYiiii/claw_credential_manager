@@ -8,7 +8,7 @@ function saveConfig() {
 
 // 加载配置
 function loadConfig() {
-  const apiBase = localStorage.getItem('apiBase') || 'http://localhost:8002';
+  const apiBase = localStorage.getItem('apiBase') || 'http://127.0.0.1:8002';
   const apiKey = localStorage.getItem('apiKey') || 'd59df52d3a8b6e9843c2632e9a8440aa59d68b649018cf30fb64112c323d7124';
   document.getElementById('apiBase').value = apiBase;
   document.getElementById('apiKey').value = apiKey;
