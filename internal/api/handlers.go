@@ -32,7 +32,8 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/health", s.handleHealth)
 	s.mux.HandleFunc("/entries", s.handleEntries)
 	s.mux.HandleFunc("/entries/", s.handleEntry)
-	s.mux.HandleFunc("/mcp", s.handleMCP) // MCP over HTTP endpoint
+	s.mux.HandleFunc("/mcp", s.handleMCP)  // MCP over HTTP endpoint (no trailing slash)
+	s.mux.HandleFunc("/mcp/", s.handleMCP) // MCP over HTTP endpoint (with trailing slash)
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
