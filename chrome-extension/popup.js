@@ -22,6 +22,79 @@ function showStatus(message, type = 'info') {
   status.style.display = 'block';
 }
 
+async function readResponseError(response) {
+  const text = await response.text();
+  if (!text) {
+    return `HTTP ${response.status}`;
+  }
+
+  try {
+    const data = JSON.parse(text);
+    if (data && typeof data === 'object') {
+      return data.error || data.message || text;
+    }
+  } catch (error) {
+    // Fall back to plain text responses from the Go API.
+  }
+
+  return text;
+}
+
+function buildEntryPayload(entryId, domain, password, cookieCount) {
+  return {
+    id: entryId,
+    name: `${domain} Cookies`,
+    type: 'mixed',
+    password,
+    custom_fields: {
+      domain: domain,
+      source: 'chrome-extension',
+      user_agent: navigator.userAgent
+    },
+    metadata: {
+      exported_at: new Date().toISOString(),
+      cookie_count: cookieCount
+    }
+  };
+}
+
+async function upsertEntry(apiBase, apiKey, entryId, payload) {
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+    'Content-Type': 'application/json'
+  };
+
+  const createResponse = await fetch(`${apiBase}/entries`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  if (createResponse.ok) {
+    return 'created';
+  }
+
+  const createError = await readResponseError(createResponse);
+  if (createResponse.status === 409 || createError.includes('already exists')) {
+    const updatePayload = { ...payload };
+    delete updatePayload.id;
+
+    const updateResponse = await fetch(`${apiBase}/entries/${entryId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(updatePayload)
+    });
+
+    if (updateResponse.ok) {
+      return 'updated';
+    }
+
+    throw new Error(await readResponseError(updateResponse));
+  }
+
+  throw new Error(createError);
+}
+
 // 导出当前域名的 cookies
 async function exportCurrentDomain() {
   saveConfig();
@@ -62,69 +135,11 @@ async function exportCurrentDomain() {
 
     // 保存到 API
     const entryId = domain.replace(/\./g, '-') + '-cookies';
-    const response = await fetch(`${apiBase}/entries`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        id: entryId,
-        name: `${domain} Cookies`,
-        type: 'mixed',
-        password: JSON.stringify(cookieData),
-        custom_fields: {
-          domain: domain,
-          source: 'chrome-extension',
-          user_agent: navigator.userAgent
-        },
-        metadata: {
-          exported_at: new Date().toISOString(),
-          cookie_count: cookies.length
-        }
-      })
-    });
+    const payload = buildEntryPayload(entryId, domain, JSON.stringify(cookieData), cookies.length);
+    const action = await upsertEntry(apiBase, apiKey, entryId, payload);
+    const actionLabel = action === 'updated' ? '更新' : '导出';
 
-    if (response.status === 400 || response.status === 500) {
-      const error = await response.json();
-      if (error.error && error.error.includes('already exists')) {
-        // 尝试更新
-        const updateResponse = await fetch(`${apiBase}/entries/${entryId}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            name: `${domain} Cookies`,
-            type: 'mixed',
-            password: JSON.stringify(cookieData),
-            custom_fields: {
-              domain: domain,
-              source: 'chrome-extension',
-              user_agent: navigator.userAgent
-            },
-            metadata: {
-              exported_at: new Date().toISOString(),
-              cookie_count: cookies.length
-            }
-          })
-        });
-
-        if (updateResponse.ok) {
-          showStatus(`✅ 成功更新 ${cookies.length} 个 cookies`, 'success');
-        } else {
-          throw new Error('更新失败');
-        }
-        return;
-      }
-    }
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    showStatus(`✅ 成功导出 ${cookies.length} 个 cookies`, 'success');
+    showStatus(`✅ 成功${actionLabel} ${cookies.length} 个 cookies`, 'success');
 
   } catch (error) {
     showStatus(`❌ 导出失败: ${error.message}`, 'error');
@@ -180,69 +195,9 @@ async function exportAllDomains() {
       const entryId = domain.replace(/\./g, '-') + '-cookies';
 
       try {
-        const response = await fetch(`${apiBase}/entries`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            id: entryId,
-            name: `${domain} Cookies`,
-            type: 'mixed',
-            password: JSON.stringify(cookies),
-            custom_fields: {
-              domain: domain,
-              source: 'chrome-extension',
-              user_agent: navigator.userAgent
-            },
-            metadata: {
-              exported_at: new Date().toISOString(),
-              cookie_count: cookies.length
-            }
-          })
-        });
-
-        if (response.status === 400 || response.status === 500) {
-          const error = await response.json();
-          if (error.error && error.error.includes('already exists')) {
-            // 尝试更新
-            const updateResponse = await fetch(`${apiBase}/entries/${entryId}`, {
-              method: 'PUT',
-              headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                name: `${domain} Cookies`,
-                type: 'mixed',
-                password: JSON.stringify(cookies),
-                custom_fields: {
-                  domain: domain,
-                  source: 'chrome-extension',
-                  user_agent: navigator.userAgent
-                },
-                metadata: {
-                  exported_at: new Date().toISOString(),
-                  cookie_count: cookies.length
-                }
-              })
-            });
-
-            if (updateResponse.ok) {
-              successCount++;
-            } else {
-              failCount++;
-            }
-            continue;
-          }
-        }
-
-        if (response.ok) {
-          successCount++;
-        } else {
-          failCount++;
-        }
+        const payload = buildEntryPayload(entryId, domain, JSON.stringify(cookies), cookies.length);
+        await upsertEntry(apiBase, apiKey, entryId, payload);
+        successCount++;
       } catch (error) {
         failCount++;
       }

@@ -40,9 +40,17 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
+func writeJSONError(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"error": message,
+	})
+}
+
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
@@ -57,7 +65,7 @@ func (s *Server) handleEntries(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		s.createEntry(w, r)
 	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
 	}
 }
 
@@ -65,7 +73,7 @@ func (s *Server) handleEntry(w http.ResponseWriter, r *http.Request) {
 	// Extract ID from path /entries/{id}
 	path := strings.TrimPrefix(r.URL.Path, "/entries/")
 	if path == "" {
-		http.Error(w, "entry id required", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "entry id required")
 		return
 	}
 
@@ -77,7 +85,7 @@ func (s *Server) handleEntry(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		s.deleteEntry(w, r, path)
 	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
 	}
 }
 
@@ -85,7 +93,7 @@ func (s *Server) listEntries(w http.ResponseWriter, r *http.Request) {
 	entries, err := s.service.ListEntries()
 	if err != nil {
 		s.audit.LogAccess("api", "list", "*", false)
-		http.Error(w, fmt.Sprintf("list entries: %v", err), http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("list entries: %v", err))
 		return
 	}
 
@@ -103,11 +111,11 @@ func (s *Server) getEntry(w http.ResponseWriter, r *http.Request, id string) {
 	if err != nil {
 		s.audit.LogAccess("api", "get", id, false)
 		if strings.Contains(err.Error(), "not in allowlist") {
-			http.Error(w, err.Error(), http.StatusForbidden)
+			writeJSONError(w, http.StatusForbidden, err.Error())
 		} else if strings.Contains(err.Error(), "not found") {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			writeJSONError(w, http.StatusNotFound, err.Error())
 		} else {
-			http.Error(w, fmt.Sprintf("get entry: %v", err), http.StatusInternalServerError)
+			writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("get entry: %v", err))
 		}
 		return
 	}
@@ -121,16 +129,18 @@ func (s *Server) getEntry(w http.ResponseWriter, r *http.Request, id string) {
 func (s *Server) createEntry(w http.ResponseWriter, r *http.Request) {
 	var entry models.Entry
 	if err := json.NewDecoder(r.Body).Decode(&entry); err != nil {
-		http.Error(w, fmt.Sprintf("decode request: %v", err), http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, fmt.Sprintf("decode request: %v", err))
 		return
 	}
 
 	if err := s.service.CreateEntry(&entry); err != nil {
 		s.audit.LogAccess("api", "create", entry.ID, false)
 		if strings.Contains(err.Error(), "not in allowlist") {
-			http.Error(w, err.Error(), http.StatusForbidden)
+			writeJSONError(w, http.StatusForbidden, err.Error())
+		} else if strings.Contains(err.Error(), "already exists") {
+			writeJSONError(w, http.StatusConflict, fmt.Sprintf("create entry: %v", err))
 		} else {
-			http.Error(w, fmt.Sprintf("create entry: %v", err), http.StatusInternalServerError)
+			writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("create entry: %v", err))
 		}
 		return
 	}
@@ -145,7 +155,7 @@ func (s *Server) createEntry(w http.ResponseWriter, r *http.Request) {
 func (s *Server) updateEntry(w http.ResponseWriter, r *http.Request, id string) {
 	var entry models.Entry
 	if err := json.NewDecoder(r.Body).Decode(&entry); err != nil {
-		http.Error(w, fmt.Sprintf("decode request: %v", err), http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, fmt.Sprintf("decode request: %v", err))
 		return
 	}
 
@@ -155,11 +165,11 @@ func (s *Server) updateEntry(w http.ResponseWriter, r *http.Request, id string) 
 	if err := s.service.UpdateEntry(&entry); err != nil {
 		s.audit.LogAccess("api", "update", id, false)
 		if strings.Contains(err.Error(), "not in allowlist") {
-			http.Error(w, err.Error(), http.StatusForbidden)
+			writeJSONError(w, http.StatusForbidden, err.Error())
 		} else if strings.Contains(err.Error(), "not found") {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			writeJSONError(w, http.StatusNotFound, err.Error())
 		} else {
-			http.Error(w, fmt.Sprintf("update entry: %v", err), http.StatusInternalServerError)
+			writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("update entry: %v", err))
 		}
 		return
 	}
@@ -174,11 +184,11 @@ func (s *Server) deleteEntry(w http.ResponseWriter, r *http.Request, id string) 
 	if err := s.service.DeleteEntry(id); err != nil {
 		s.audit.LogAccess("api", "delete", id, false)
 		if strings.Contains(err.Error(), "not in allowlist") {
-			http.Error(w, err.Error(), http.StatusForbidden)
+			writeJSONError(w, http.StatusForbidden, err.Error())
 		} else if strings.Contains(err.Error(), "not found") {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			writeJSONError(w, http.StatusNotFound, err.Error())
 		} else {
-			http.Error(w, fmt.Sprintf("delete entry: %v", err), http.StatusInternalServerError)
+			writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("delete entry: %v", err))
 		}
 		return
 	}
@@ -191,7 +201,7 @@ func (s *Server) deleteEntry(w http.ResponseWriter, r *http.Request, id string) 
 // handleMCP handles MCP protocol requests over HTTP
 func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
@@ -203,7 +213,7 @@ func (s *Server) handleMCP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, fmt.Sprintf("parse request: %v", err), http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, fmt.Sprintf("parse request: %v", err))
 		return
 	}
 
