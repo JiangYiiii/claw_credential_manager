@@ -51,12 +51,35 @@ cd scripts && npm run sync-cookies
 
 新增别名：编辑 `scripts/cookie-entry-aliases.json`，格式为 `"别名ID": "配置域名"`。
 
-## 定时同步（可选）
+## 定时同步
+
+### OpenClaw 定时任务（推荐）
+
+在 OpenClaw 中注册每 10 分钟自动同步：
+
+```bash
+./scripts/install-openclaw-cookie-sync-cron.sh
+```
+
+验证：
+
+```bash
+openclaw cron list | grep cookie-keeper-sync
+openclaw cron run cookie-keeper-sync   # 立即试跑一次
+```
+
+自定义间隔（如 5 分钟）：
+
+```bash
+OPENCLAW_CRON_INTERVAL=5m ./scripts/install-openclaw-cookie-sync-cron.sh
+```
+
+### 系统 crontab（备选）
 
 ```bash
 crontab -e
-# 每 15 分钟同步一次
-*/15 * * * * cd /path/to/claw_credential_manager && ./scripts/auto-refresh-cookies.sh >> /tmp/openclaw-cookie-refresh.log 2>&1
+# 每 10 分钟同步一次
+*/10 * * * * cd /path/to/claw_credential_manager && ./scripts/auto-refresh-cookies.sh >> /tmp/openclaw-cookie-refresh.log 2>&1
 ```
 
 ## 环境变量

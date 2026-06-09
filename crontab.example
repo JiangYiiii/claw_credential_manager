@@ -11,11 +11,17 @@
 # 项目路径（请修改为您的实际路径）
 PROJECT_PATH=/Users/jiangyi/Documents/codedev/claw_credential_manager
 
-# 方案 A: 每 15 分钟将 Cookie Keeper 快照同步到 KeePass（推荐）
-*/15 * * * * cd $PROJECT_PATH && ./scripts/auto-refresh-cookies.sh >> /tmp/openclaw-cookie-refresh.log 2>&1
+# 方案 A: OpenClaw 定时任务（推荐，每 10 分钟）
+# 一次性安装：
+#   cd $PROJECT_PATH && ./scripts/install-openclaw-cookie-sync-cron.sh
+# 验证：
+#   openclaw cron list | grep cookie-keeper-sync
 
-# 方案 B: 每 6 小时同步一次（低频场景）
+# 方案 B: 系统 crontab（每 10 分钟）
+*/10 * * * * cd $PROJECT_PATH && ./scripts/auto-refresh-cookies.sh >> /tmp/openclaw-cookie-refresh.log 2>&1
+
+# 方案 C: 每 6 小时同步一次（低频场景）
 # 0 */6 * * * cd $PROJECT_PATH && ./scripts/sync-cookie-keeper-to-vault.sh >> /tmp/openclaw-cookie-refresh.log 2>&1
 
-# 方案 C: 工作日每天早上 9 点检查配置（可选）
+# 方案 D: 工作日每天早上 9 点检查配置（可选）
 # 0 9 * * 1-5 cd $PROJECT_PATH && ./scripts/check-config.sh >> /tmp/openclaw-config-check.log 2>&1
