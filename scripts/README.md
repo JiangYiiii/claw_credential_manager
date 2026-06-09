@@ -1,148 +1,89 @@
-# Chrome Cookie Export Scripts
+# Cookie 同步脚本
 
-用于从 Chrome 浏览器导出 cookies 并保存到 Claw 凭证管理器的工具集。
+将 Cookie Keeper 扩展写入的快照文件同步到 KeePass 凭证库，供 OpenClaw / MCP `get_credential` 使用。
 
-## 快速开始
+## 架构
 
-### 1. 安装依赖
-
-```bash
-cd scripts
-npm install puppeteer-core
+```
+Cookie Keeper 扩展 + Native Messaging Host
+    → ~/.agents/cookie-keeper/all-cookies.json
+    → scripts/sync-cookie-keeper-to-vault.js
+    → credential-manager API (localhost:8002)
+    → KeePass vault (*-cookies entries)
+    → MCP get_credential
 ```
 
-### 2. 创建 Chrome Debug 应用（一键完成）
+## 前置条件
 
-运行以下命令创建一个独立的启动器应用：
+1. 已安装 Cookie Keeper Chrome 扩展（见 `../chrome-extension/INSTALL.md`）
+2. 自动模式下已安装 Native Messaging Host（`bash host/scripts/install.sh --ext-id <ID>`）
+3. credential-manager 容器/API 正常运行
+
+## 同步命令
 
 ```bash
-./create-app.sh
+# 一次性同步
+./scripts/sync-cookie-keeper-to-vault.sh
+
+# 或通过 npm script
+cd scripts && npm run sync-cookies
 ```
 
-这会在 `~/Applications/` 创建 `Chrome Debug.app`，**所有启动逻辑都内置在 App 中，无需额外脚本**。
+## 凭证 ID 规则
 
-之后你可以：
-- 在 Alfred/Spotlight 中搜索 `Chrome Debug` 启动
-- 双击应用图标启动
-- 在 Dock 中固定快捷启动
+与旧版 Claw Cookie Exporter 一致：`{domain-with-dashes}-cookies`
 
-### 3. 登录网站
+| 配置域名 | 凭证 ID |
+|---------|---------|
+| `rhino.fintopia.tech` | `rhino-fintopia-tech-cookies` |
+| `funding-admin.fintopia.tech` | `funding-admin-fintopia-tech-cookies` |
+| `.fintopia.tech` | `fintopia-tech-cookies` |
 
-在启动的 Chrome Debug 中访问并登录你需要导出 cookies 的网站。
+## 别名映射（兼容旧 ID）
 
-### 4. 导出 cookies
+旧版 CDP 导出使用短 ID（如 `rhino-cookies`），OpenClaw 可能仍在使用这些 ID。同步脚本会额外写入 alias entry，映射关系见 `cookie-entry-aliases.json`：
 
-**方式 A：导出所有已登录网站（推荐）**
+| 别名（旧 ID） | 来源域名 |
+|--------------|---------|
+| `rhino-cookies` | `rhino.fintopia.tech` |
+| `loan-admin-cookies` | `loan-admin.fintopia.tech` |
+| `fintopia-cookies` | `.fintopia.tech` |
+
+新增别名：编辑 `scripts/cookie-entry-aliases.json`，格式为 `"别名ID": "配置域名"`。
+
+## 定时同步（可选）
+
 ```bash
-./export-all-cookies.sh
+crontab -e
+# 每 15 分钟同步一次
+*/15 * * * * cd /path/to/claw_credential_manager && ./scripts/auto-refresh-cookies.sh >> /tmp/openclaw-cookie-refresh.log 2>&1
 ```
-
-**方式 B：导出单个网站**
-```bash
-./save-cookies-main.sh github.com
-```
-
-## 脚本说明
-
-### 核心脚本
-
-- **`create-app.sh`** - 创建独立的 macOS 应用
-  - 生成 `~/Applications/Chrome Debug.app`
-  - **所有启动逻辑内置，无需外部脚本**
-  - 自动同步登录状态（首次运行）
-  - 开启远程调试端口 9222
-  - 可在 Spotlight/Alfred/Dock 中使用
-
-### 导出脚本
-
-- **`export-all-cookies.sh`** - 批量导出所有域名的 cookies
-  - 自动发现所有已登录网站
-  - 批量保存到凭证管理器
-  - 显示导出统计信息
-
-- **`save-cookies-main.sh <domain>`** - 导出单个域名
-  - 导出指定域名的 cookies
-  - 保存到凭证管理器
-  - 支持更新已存在的条目
-
-- **`export-from-main-chrome.js <domain>`** - 底层导出工具
-  - 连接到 Chrome 调试端口
-  - 提取指定域名的 cookies
-  - 输出 JSON 格式
-
-- **`list-all-domains.js`** - 列出所有包含 cookies 的域名
-  - 用于查看当前有哪些网站已登录
-
-## 工作原理
-
-1. **Chrome Debug** 使用独立的配置目录：
-   ```
-   ~/Library/Application Support/Google/Chrome-Debug/
-   ```
-
-2. **远程调试** 通过 Chrome DevTools Protocol (CDP) 连接：
-   ```
-   http://localhost:9222
-   ```
-
-3. **Cookie 存储** 保存在凭证管理器中：
-   - Entry ID: `{domain}-cookies`
-   - Type: `mixed`
-   - Password: JSON 格式的 cookies 数组
-   - Custom Fields: 包含 domain, user_agent, source
-
-4. **OpenClaw 使用** 通过 MCP 获取凭证：
-   ```javascript
-   const credential = await mcpClient.callTool('get_credential', {
-     id: 'github-cookies'
-   });
-   const cookies = JSON.parse(credential.password);
-   ```
 
 ## 环境变量
 
-- `CLAW_API_KEY` - 凭证管理器 API Key（默认：`claw_1776839434829992000`）
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `COOKIE_KEEPER_PATH` | `~/.agents/cookie-keeper/all-cookies.json` | 快照路径 |
+| `CLAW_API_BASE` | `http://127.0.0.1:8002` | credential-manager API |
+| `CLAW_API_KEY` | 见 `.env.openclaw` | API 认证密钥 |
 
-## 常见问题
+## 在 OpenClaw 中使用
 
-### Q: 为什么要用独立的 Chrome Debug？
-A: 使用主 Chrome 无法开启远程调试（macOS 限制）。独立的 Chrome Debug：
-- 可以开启调试端口
-- 不影响日常使用的 Chrome
-- 登录状态独立保存
+同步完成后，通过 MCP 获取 cookie entry：
 
-### Q: 每次都要重新登录吗？
-A: 不需要。Chrome Debug 会保存你的登录状态，下次启动直接可用。
-
-### Q: 如何更新 cookies？
-A: 再次运行导出命令即可自动更新。
-
-### Q: OpenClaw 使用时会踢掉我的登录吗？
-A: 如果使用相同的 User-Agent，一般不会。脚本会自动保存 User-Agent 到凭证中。
-
-## 文件结构
-
-```
-scripts/
-├── README.md                    # 本文件
-├── create-app.sh                # 创建独立的 Chrome Debug 应用（推荐）
-├── export-all-cookies.sh        # 批量导出所有网站 cookies
-├── save-cookies-main.sh         # 导出单个网站 cookies
-├── export-from-main-chrome.js   # Cookie 导出核心逻辑
-├── list-all-domains.js          # 列出所有已登录域名
-└── package.json                 # Node.js 依赖配置
+```javascript
+const credential = await mcpClient.callTool('get_credential', {
+  id: 'rhino-fintopia-tech-cookies'
+});
+const cookies = JSON.parse(credential.password);
 ```
 
-## 分享给其他用户
+## 已废弃
 
-如果要分享给其他用户，他们需要：
+以下旧脚本不再使用（Chrome CDP 导出链路）：
 
-1. 克隆仓库或复制 `scripts/` 目录
-2. 安装依赖：`npm install puppeteer-core`
-3. 运行 `./create-app.sh` 创建启动器
-4. 启动 Chrome Debug 并登录网站
-5. 运行 `./export-all-cookies.sh` 导出
-
-## License
-
-MIT
+- ~~`create-app.sh`~~ — 创建 Chrome Debug 启动器
+- ~~`export-from-main-chrome.js`~~ — CDP 导出
+- ~~`export-all-cookies.sh`~~ — 批量 CDP 导出
+- ~~`save-cookies-main.sh`~~ — 单域名 CDP 导出
+- ~~`list-all-domains.js`~~ — 列出 CDP 域名

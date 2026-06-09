@@ -1,223 +1,273 @@
-// 保存配置到 localStorage
-function saveConfig() {
-  const apiBase = document.getElementById('apiBase').value;
-  const apiKey = document.getElementById('apiKey').value;
-  localStorage.setItem('apiBase', apiBase);
-  localStorage.setItem('apiKey', apiKey);
-}
+import {
+  getSettings,
+  getLastExport,
+  exportAllConfiguredCookies,
+  getAutoExportState,
+  updateBadgeFromState,
+  resetAutoExportBadge
+} from './util.js';
 
-// 加载配置
-function loadConfig() {
-  const apiBase = localStorage.getItem('apiBase') || 'http://127.0.0.1:8002';
-  const apiKey = localStorage.getItem('apiKey') || 'd59df52d3a8b6e9843c2632e9a8440aa59d68b649018cf30fb64112c323d7124';
-  document.getElementById('apiBase').value = apiBase;
-  document.getElementById('apiKey').value = apiKey;
-}
+const listEl = document.getElementById('list');
+const openOptionsBtn = document.getElementById('openOptions');
+const exportAllBtn = document.getElementById('exportAllBtn');
+let domainsExpanded = false;
 
-// 显示状态消息
-function showStatus(message, type = 'info') {
-  const status = document.getElementById('status');
-  status.textContent = message;
-  status.className = `status ${type}`;
-  status.style.display = 'block';
-}
+openOptionsBtn.addEventListener('click', () => chrome.runtime.openOptionsPage());
+exportAllBtn.addEventListener('click', exportNow);
 
-async function readResponseError(response) {
-  const text = await response.text();
-  if (!text) {
-    return `HTTP ${response.status}`;
+async function render() {
+  const settings = await getSettings();
+  const lastExport = await getLastExport();
+  const autoState = await getAutoExportState();
+  await updateBadgeFromState(settings, autoState);
+
+  if (settings.syncMode === 'auto-host') {
+    return renderAutoHost(settings, autoState, lastExport);
   }
 
-  try {
-    const data = JSON.parse(text);
-    if (data && typeof data === 'object') {
-      return data.error || data.message || text;
-    }
-  } catch (error) {
-    // Fall back to plain text responses from the Go API.
-  }
-
-  return text;
+  return renderManual(settings, autoState, lastExport);
 }
 
-function buildEntryPayload(entryId, domain, password, cookieCount) {
-  return {
-    id: entryId,
-    name: `${domain} Cookies`,
-    type: 'mixed',
-    password,
-    custom_fields: {
-      domain: domain,
-      source: 'chrome-extension',
-      user_agent: navigator.userAgent
-    },
-    metadata: {
-      exported_at: new Date().toISOString(),
-      cookie_count: cookieCount
-    }
-  };
+async function renderAutoHost(settings, autoState, lastExport) {
+  exportAllBtn.style.display = 'none';
+  const isError = autoState.lastStatus === 'error';
+  const statusLine = autoState.lastStatus === 'ok'
+    ? `✅ 上次同步：${formatDateTime(autoState.lastAt)} · ${autoState.lastCookieCount ?? '?'} 个 cookie`
+    : isError
+      ? `✗ 出错：${escapeHtml(autoState.lastError || 'unknown')}`
+      : '尚未同步';
+  listEl.innerHTML = `
+    <div class="card">
+      <div class="headline">
+        <div class="name">自动模式</div>
+        <div class="pill">${settings.domains.length} 个域名</div>
+      </div>
+      <div class="path-row">
+        <div class="path">~/.agents/cookie-keeper/all-cookies.json</div>
+      </div>
+      ${renderDomainsPanel(settings)}
+      <div class="status${isError ? ' error' : ''}">${statusLine}</div>
+      ${isError ? `<div class="status error" style="margin-top:6px;">在配置页查看安装命令 / 切回手动模式</div>` : ''}
+    </div>
+  `;
+  wireDomainsPanel();
 }
 
-async function upsertEntry(apiBase, apiKey, entryId, payload) {
-  const headers = {
-    'Authorization': `Bearer ${apiKey}`,
-    'Content-Type': 'application/json'
-  };
+function renderDomainsPanel(settings) {
+  if (!settings.domains.length) return '';
+  const previewCount = domainsExpanded ? settings.domains.length : 3;
+  const visibleDomains = settings.domains.slice(0, previewCount);
+  const hiddenCount = Math.max(settings.domains.length - previewCount, 0);
+  return `
+    <div class="domains-panel">
+      <div class="domains-header">
+        <div class="domains-title">已配置域名</div>
+        <div class="domains-count">共 ${settings.domains.length} 个</div>
+      </div>
+      <div class="domains ${domainsExpanded ? 'expanded' : ''}">${visibleDomains.map((domain) => `<span class="chip">${escapeHtml(domain)}</span>`).join('')}${!domainsExpanded && hiddenCount > 0 ? `<button class="chip chip-action" title="展开其余域名" data-action="expand">展开 +${hiddenCount}</button>` : ''}${domainsExpanded && settings.domains.length > 3 ? `<button class="chip chip-action" title="收起域名列表" data-action="collapse">收起</button>` : ''}</div>
+    </div>
+  `;
+}
 
-  const createResponse = await fetch(`${apiBase}/entries`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload)
-  });
-
-  if (createResponse.ok) {
-    return 'created';
-  }
-
-  const createError = await readResponseError(createResponse);
-  if (createResponse.status === 409 || createError.includes('already exists')) {
-    const updatePayload = { ...payload };
-    delete updatePayload.id;
-
-    const updateResponse = await fetch(`${apiBase}/entries/${entryId}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify(updatePayload)
+function wireDomainsPanel() {
+  const expandBtn = listEl.querySelector('button[data-action="expand"]');
+  if (expandBtn) {
+    expandBtn.addEventListener('click', () => {
+      domainsExpanded = true;
+      render().catch((error) => renderFatal(error?.message || '未知错误'));
     });
-
-    if (updateResponse.ok) {
-      return 'updated';
-    }
-
-    throw new Error(await readResponseError(updateResponse));
   }
-
-  throw new Error(createError);
-}
-
-// 导出当前域名的 cookies
-async function exportCurrentDomain() {
-  saveConfig();
-  const apiBase = document.getElementById('apiBase').value;
-  const apiKey = document.getElementById('apiKey').value;
-
-  const exportBtn = document.getElementById('exportBtn');
-  exportBtn.disabled = true;
-  exportBtn.textContent = '⏳ 导出中...';
-
-  try {
-    // 获取当前标签页
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const url = new URL(tab.url);
-    const domain = url.hostname;
-
-    showStatus(`正在导出 ${domain} 的 cookies...`, 'info');
-
-    // 获取该域名的所有 cookies
-    const cookies = await chrome.cookies.getAll({ domain: domain });
-
-    if (cookies.length === 0) {
-      showStatus('当前域名没有 cookies', 'error');
-      return;
-    }
-
-    // 转换为 Netscape 格式
-    const cookieData = cookies.map(c => ({
-      name: c.name,
-      value: c.value,
-      domain: c.domain,
-      path: c.path,
-      expires: c.expirationDate ? new Date(c.expirationDate * 1000).toISOString() : null,
-      httpOnly: c.httpOnly,
-      secure: c.secure,
-      sameSite: c.sameSite
-    }));
-
-    // 保存到 API
-    const entryId = domain.replace(/\./g, '-') + '-cookies';
-    const payload = buildEntryPayload(entryId, domain, JSON.stringify(cookieData), cookies.length);
-    const action = await upsertEntry(apiBase, apiKey, entryId, payload);
-    const actionLabel = action === 'updated' ? '更新' : '导出';
-
-    showStatus(`✅ 成功${actionLabel} ${cookies.length} 个 cookies`, 'success');
-
-  } catch (error) {
-    showStatus(`❌ 导出失败: ${error.message}`, 'error');
-  } finally {
-    exportBtn.disabled = false;
-    exportBtn.textContent = '导出当前域名的 Cookies';
+  const collapseBtn = listEl.querySelector('button[data-action="collapse"]');
+  if (collapseBtn) {
+    collapseBtn.addEventListener('click', () => {
+      domainsExpanded = false;
+      render().catch((error) => renderFatal(error?.message || '未知错误'));
+    });
   }
 }
 
-// 导出所有域名的 cookies
-async function exportAllDomains() {
-  saveConfig();
-  const apiBase = document.getElementById('apiBase').value;
-  const apiKey = document.getElementById('apiKey').value;
+async function renderManual(settings, autoState, lastExport) {
+  exportAllBtn.style.display = '';
+  const targetLabel = settings.fileHandleMeta?.name || '还没选择固定文件';
 
-  const exportAllBtn = document.getElementById('exportAllBtn');
+  if (!settings.domains.length) {
+    listEl.innerHTML = '<div class="empty">还没有可导出的域名。先去“配置”里检查默认域名列表，或补充你自己的域名。</div>';
+    exportAllBtn.disabled = true;
+    return;
+  }
+
+  if (!settings.fileHandleMeta) {
+    listEl.innerHTML = '<div class="empty">还没绑定固定文件。先去“配置”里选择一个 JSON 文件。</div>';
+    exportAllBtn.disabled = true;
+    return;
+  }
+
+  exportAllBtn.disabled = false;
+
+  listEl.innerHTML = `
+    ${renderModePill(settings, autoState)}
+    <div class="card">
+      <div class="headline">
+        <div class="name">固定导出文件</div>
+        <div class="pill">${settings.domains.length} 个域名</div>
+      </div>
+
+      <div class="path-row">
+        <div class="path" title="${escapeHtmlAttr(targetLabel)}">${escapeHtml(targetLabel)}</div>
+      </div>
+
+      ${renderDomainsPanel(settings)}
+
+      <div class="status" id="status-main">${formatLastExportStatus(lastExport)}</div>
+    </div>
+  `;
+
+  const errorPillEl = listEl.querySelector('.mode-pill.mode-error');
+  if (errorPillEl) {
+    errorPillEl.addEventListener('click', () => chrome.runtime.openOptionsPage());
+  }
+
+  const pendingPillEl = listEl.querySelector('.mode-pill.mode-pending');
+  if (pendingPillEl) {
+    pendingPillEl.addEventListener('click', () => exportNow());
+    // Visible hint to the user; Enter will trigger the export button.
+    exportAllBtn.focus();
+  }
+
+  wireDomainsPanel();
+}
+
+async function exportNow() {
+  const statusEl = document.getElementById('status-main');
   exportAllBtn.disabled = true;
-  exportAllBtn.textContent = '⏳ 导出中...';
+  if (statusEl) {
+    statusEl.classList.remove('error');
+    statusEl.textContent = '导出中...';
+  }
 
   try {
-    showStatus('正在获取所有 cookies...', 'info');
-
-    // 获取所有 cookies
-    const allCookies = await chrome.cookies.getAll({});
-
-    // 按域名分组
-    const cookiesByDomain = {};
-    allCookies.forEach(cookie => {
-      const domain = cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain;
-      if (!cookiesByDomain[domain]) {
-        cookiesByDomain[domain] = [];
-      }
-      cookiesByDomain[domain].push({
-        name: cookie.name,
-        value: cookie.value,
-        domain: cookie.domain,
-        path: cookie.path,
-        expires: cookie.expirationDate ? new Date(cookie.expirationDate * 1000).toISOString() : null,
-        httpOnly: cookie.httpOnly,
-        secure: cookie.secure,
-        sameSite: cookie.sameSite
-      });
-    });
-
-    const domains = Object.keys(cookiesByDomain);
-    showStatus(`找到 ${domains.length} 个域名，正在导出...`, 'info');
-
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const domain of domains) {
-      const cookies = cookiesByDomain[domain];
-      const entryId = domain.replace(/\./g, '-') + '-cookies';
-
-      try {
-        const payload = buildEntryPayload(entryId, domain, JSON.stringify(cookies), cookies.length);
-        await upsertEntry(apiBase, apiKey, entryId, payload);
-        successCount++;
-      } catch (error) {
-        failCount++;
-      }
+    const settings = await getSettings();
+    const result = await exportAllConfiguredCookies(settings);
+    // Manual (or auto-on-open) export proves the handle & permission are
+    // healthy; clear any lingering auto-export error state so the amber/red
+    // pill/badge resets.
+    await resetAutoExportBadge();
+    if (statusEl) {
+      statusEl.textContent = `刚刚导出成功 · ${result.wroteTo}`;
     }
-
-    showStatus(`✅ 导出完成: ${successCount} 成功, ${failCount} 失败`, 'success');
-
+    await render();
   } catch (error) {
-    showStatus(`❌ 导出失败: ${error.message}`, 'error');
+    if (statusEl) {
+      statusEl.classList.add('error');
+      statusEl.textContent = `导出失败：${error.message}`;
+    }
   } finally {
     exportAllBtn.disabled = false;
-    exportAllBtn.textContent = '导出所有域名的 Cookies';
   }
 }
 
-// 初始化
-document.addEventListener('DOMContentLoaded', () => {
-  loadConfig();
-  document.getElementById('exportBtn').addEventListener('click', exportCurrentDomain);
-  document.getElementById('exportAllBtn').addEventListener('click', exportAllDomains);
-  document.getElementById('apiBase').addEventListener('change', saveConfig);
-  document.getElementById('apiKey').addEventListener('change', saveConfig);
+function renderModePill(_settings, autoState) {
+  if (autoState.lastStatus === 'pending-auth') {
+    return `<div class="mode-pill mode-pending" title="检测到 Cookie 更新，点「立即导出」同步文件"><span class="dot"></span>有 Cookie 更新 · 点「立即导出」同步</div>`;
+  }
+  if (autoState.lastStatus === 'error') {
+    const hint = autoState.lastError
+      ? `上次失败：${truncate(autoState.lastError, 40)}`
+      : '上次失败';
+    return `<div class="mode-pill mode-error" title="点击打开配置页重新检查文件绑定"><span class="dot"></span>${escapeHtml(hint)}</div>`;
+  }
+  return '';
+}
+
+function truncate(value, max) {
+  const s = String(value);
+  return s.length > max ? `${s.slice(0, max)}…` : s;
+}
+
+function formatLastExportStatus(lastExport) {
+  if (!lastExport) return '还没导出过';
+  const base = `${formatDateTime(lastExport.at)} · ${lastExport.cookieCount} 个 cookie · ${lastExport.configuredDomainCount} 个域名`;
+  const target = lastExport.wroteTo ? `<br>写入：${escapeHtml(lastExport.wroteTo)}` : '';
+  const fallback = lastExport.fallbackReason ? `<br>错误：${escapeHtml(lastExport.fallbackReason)}` : '';
+  return `${base}${target}${fallback}`;
+}
+
+function formatDateTime(value) {
+  try {
+    return new Date(value).toLocaleString('zh-CN', {
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return String(value);
+  }
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function escapeHtmlAttr(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+function renderFatal(message) {
+  exportAllBtn.disabled = false;
+  listEl.innerHTML = `<div class="empty" style="color:#bb3e3e">加载失败：${escapeHtml(message)}</div>`;
+}
+
+// Clear stale errors from previous architectures (offscreen / structured
+// clone era) on popup open. These error strings can no longer occur in
+// the current code path; surface them only as fresh errors if they
+// reappear via a real export failure.
+const STALE_ERROR_PATTERNS = [
+  'createWritable is not a function',
+  '离屏',
+  'offscreen',
+  'Receiving end does not exist',
+  'autoFlushOnOpen',
+  'share handle to offscreen',
+  // Auth errors are transient by nature; if they still apply they'll
+  // reappear next time the user clicks 立即导出. Clearing them on popup
+  // open keeps the UI honest instead of showing a lingering red pill.
+  '文件写入权限待确认',
+  '没有文件写入权限',
+  '文件写入权限被拒绝'
+];
+
+async function cleanStaleErrorState() {
+  const state = await getAutoExportState();
+  if (state.lastStatus !== 'error' || !state.lastError) return false;
+  const stale = STALE_ERROR_PATTERNS.some((pattern) => state.lastError.includes(pattern));
+  if (!stale) return false;
+  await resetAutoExportBadge();
+  const settings = await getSettings();
+  await updateBadgeFromState(settings, await getAutoExportState());
+  return true;
+}
+
+// When the popup opens in pending/error state, focus the "立即导出"
+// button so Enter / a single click completes the sync. The File System
+// Access API needs a fresh in-handler user activation, so we do NOT
+// auto-invoke the export.
+(async () => {
+  const cleaned = await cleanStaleErrorState();
+  if (cleaned) await render().catch(() => {});
+})().catch(() => {});
+
+render().catch((error) => {
+  console.error('popup render failed', error);
+  renderFatal(error?.message || '未知错误');
 });

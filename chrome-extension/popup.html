@@ -1,90 +1,294 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body {
-      width: 350px;
-      padding: 15px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
-    h3 {
-      margin: 0 0 15px 0;
-      color: #333;
-    }
-    .config {
-      margin-bottom: 15px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-size: 12px;
-      color: #666;
-    }
-    input {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 13px;
-      box-sizing: border-box;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      background: #3498db;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-    }
-    button:hover {
-      background: #2980b9;
-    }
-    button:disabled {
-      background: #95a5a6;
-      cursor: not-allowed;
-    }
-    .status {
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-    .status.success {
-      background: #d4edda;
-      color: #155724;
-    }
-    .status.error {
-      background: #f8d7da;
-      color: #721c24;
-    }
-    .status.info {
-      background: #d1ecf1;
-      color: #0c5460;
-    }
-  </style>
-</head>
-<body>
-  <h3>🍪 导出 Cookies</h3>
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cookie Keeper</title>
+    <style>
+      :root {
+        --bg: #f5f1e8;
+        --panel: rgba(255, 252, 247, 0.92);
+        --card: rgba(255, 253, 250, 0.96);
+        --text: #1d2a22;
+        --muted: #667166;
+        --line: rgba(47, 74, 57, 0.12);
+        --primary: #24442f;
+        --primary-2: #315a3f;
+        --accent: #edf3ea;
+        --accent-strong: #dcebdc;
+        --success: #1f7a5a;
+        --danger: #bb3e3e;
+        --shadow: 0 14px 34px rgba(26, 39, 31, 0.08);
+      }
 
-  <div class="config">
-    <label>API 地址</label>
-    <input type="text" id="apiBase" value="http://localhost:8002" placeholder="http://localhost:8002">
-  </div>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 10px;
+        width: 340px;
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(78, 124, 93, 0.1), transparent 26%),
+          linear-gradient(180deg, var(--bg) 0%, #efe7da 100%);
+      }
 
-  <div class="config">
-    <label>API Key</label>
-    <input type="text" id="apiKey" value="d59df52d3a8b6e9843c2632e9a8440aa59d68b649018cf30fb64112c323d7124" placeholder="API Key">
-  </div>
+      .shell {
+        border: 1px solid rgba(255,255,255,0.76);
+        background: var(--panel);
+        backdrop-filter: blur(10px);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
 
-  <button id="exportBtn">导出当前域名的 Cookies</button>
-  <button id="exportAllBtn" style="margin-top: 8px;">导出所有域名的 Cookies</button>
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+      }
 
-  <div id="status"></div>
+      .title h1 {
+        margin: 0;
+        font-size: 15px;
+      }
 
-  <script src="popup.js"></script>
-</body>
+      .subtle {
+        margin: 3px 0 0;
+        font-size: 11px;
+        line-height: 1.4;
+        color: var(--muted);
+      }
+
+      .toolbar-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      button {
+        border: 0;
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+      button.primary {
+        background: linear-gradient(180deg, #3b6e4b, #24442f);
+        color: #fff;
+        box-shadow: 0 10px 22px rgba(31, 58, 42, 0.24);
+      }
+
+      button.primary:hover {
+        background: linear-gradient(180deg, #467c57, #2a5037);
+        box-shadow: 0 12px 24px rgba(31, 58, 42, 0.28);
+      }
+
+      button.secondary {
+        background: linear-gradient(180deg, #f5fbf3, #e4efe0);
+        color: var(--primary);
+        border: 1px solid rgba(49, 78, 53, 0.14);
+      }
+
+      button.secondary:hover {
+        background: linear-gradient(180deg, #eef8eb, #d8ead2);
+      }
+
+      .content {
+        padding: 12px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--card);
+        padding: 12px;
+      }
+
+      .headline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .headline .name {
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .pill {
+        padding: 3px 7px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 700;
+        background: var(--accent);
+        color: var(--primary-2);
+        border: 1px solid rgba(47, 90, 64, 0.12);
+      }
+
+      .meta, .path, .status {
+        margin-top: 8px;
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.45;
+        word-break: break-all;
+      }
+
+      .path-row {
+        margin-top: 8px;
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+      }
+
+      .path {
+        margin-top: 0;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .domains-panel {
+        margin-top: 12px;
+        border: 1px solid rgba(47, 90, 64, 0.1);
+        background: linear-gradient(180deg, rgba(237, 243, 234, 0.86), rgba(247, 250, 246, 0.96));
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .domains-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .domains-title {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--primary-2);
+        letter-spacing: 0.02em;
+      }
+
+      .domains-count {
+        font-size: 10px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .domains {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: var(--accent-strong);
+        color: var(--primary);
+        font-size: 11px;
+        font-weight: 800;
+        border: 1px solid rgba(47, 90, 64, 0.12);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .chip-action {
+        cursor: pointer;
+        background: linear-gradient(180deg, #5f8a6d, #497358);
+        color: #fff;
+        border-color: rgba(73, 115, 88, 0.22);
+        box-shadow: 0 5px 12px rgba(31, 58, 42, 0.12);
+      }
+
+      .chip-action:hover {
+        background: linear-gradient(180deg, #6c9779, #557f63);
+      }
+
+      .status { color: var(--success); }
+      .status.error { color: var(--danger); }
+
+      .empty {
+        border: 1px dashed var(--line);
+        border-radius: 14px;
+        padding: 16px 12px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--muted);
+        background: rgba(255,255,255,0.55);
+        line-height: 1.6;
+      }
+
+      .mode-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+        margin-bottom: 10px;
+        border: 1px solid transparent;
+      }
+      .mode-pill .dot {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: currentColor;
+      }
+      .mode-pill.mode-error {
+        background: rgba(187, 62, 62, 0.1);
+        color: var(--danger);
+        border-color: rgba(187, 62, 62, 0.28);
+        cursor: pointer;
+      }
+      .mode-pill.mode-error:hover {
+        filter: brightness(0.96);
+      }
+      .mode-pill.mode-pending {
+        background: rgba(200, 138, 29, 0.12);
+        color: #8a5a10;
+        border-color: rgba(200, 138, 29, 0.32);
+        cursor: pointer;
+      }
+      .mode-pill.mode-pending:hover {
+        filter: brightness(0.98);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="toolbar">
+        <div class="title">
+          <h1>Cookie Keeper</h1>
+          <p class="subtle">多个域名写入一个固定文件</p>
+        </div>
+        <div class="toolbar-actions">
+          <button id="openOptions" class="secondary">配置</button>
+          <button id="exportAllBtn" class="primary">立即导出</button>
+        </div>
+      </div>
+      <div class="content">
+        <div id="list"></div>
+      </div>
+    </div>
+    <script type="module" src="popup.js"></script>
+  </body>
 </html>

@@ -1,0 +1,7 @@
+{
+  "name": "cookie-keeper-host",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "main": "host.js"
+}

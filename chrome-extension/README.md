@@ -1,27 +1,40 @@
-# Claw Cookie Exporter - Chrome Extension
+# Cookie Keeper
 
-浏览器扩展，用于导出 Chrome Cookies 到 Claw Credential Manager。
+> 本目录为 `claw_credential_manager` 项目内的 Chrome 扩展。  
+> 安装步骤见 [INSTALL.md](./INSTALL.md)。
 
-## 安装方法
+把多个配置域名下的 Cookie 同步成一份固定 JSON 文件，再通过 `scripts/sync-cookie-keeper-to-vault.sh` 导入 KeePass 凭证库。
 
-1. 打开 Chrome 浏览器
-2. 访问 `chrome://extensions/`
-3. 开启右上角的"开发者模式"
-4. 点击"加载已解压的扩展程序"
-5. 选择 `chrome-extension` 目录
+## 特点
 
-## 使用方法
+- **两种同步模式**（配置页可切）：
+  - **手动**：File System Access API 写用户选的固定文件
+  - **自动**：Native Messaging Host 后台写入 `~/.agents/cookie-keeper/all-cookies.json`
+- **统一一个文件**：所有配置域名合在同一份 JSON
+- **智能过滤**：第三方埋点 cookie 会被忽略
+- **与 credential-manager 集成**：同步脚本将快照写入 KeePass `*-cookies` entry
 
-1. 点击浏览器工具栏的扩展图标
-2. 配置 API 地址和 API Key (默认已填好)
-3. 点击"导出当前域名的 Cookies" 或 "导出所有域名的 Cookies"
-4. 导出完成后可在 http://localhost:8003 查看
+## 安装
 
-## 功能
+见 [INSTALL.md](./INSTALL.md)。
 
-- ✅ 导出当前域名的所有 Cookies
-- ✅ 导出浏览器所有域名的 Cookies
-- ✅ 自动保存到容器 API
-- ✅ 自动处理重复（更新已存在的条目）
-- ✅ 包含 HttpOnly 和 Secure cookies
-- ✅ 完全在浏览器中执行，无需宿主机依赖
+## 使用流程
+
+1. 安装扩展 → 配置自动模式 → 安装 Host（`host/scripts/install.sh`）
+2. 在目标网站登录
+3. 运行 `../scripts/sync-cookie-keeper-to-vault.sh` 同步到 KeePass
+4. 通过 MCP `get_credential` 读取
+
+## Host 脚本
+
+| 脚本 | 用途 |
+|------|------|
+| `host/scripts/install.sh` | 安装 Native Messaging Host |
+| `host/scripts/uninstall.sh` | 卸载 Host |
+| `host/scripts/doctor.sh` | 健康检查 |
+
+## 打包
+
+```bash
+bash build-pack.sh   # dist/cookie-keeper-<version>.zip
+```

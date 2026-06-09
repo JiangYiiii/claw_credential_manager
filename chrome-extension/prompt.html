@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cookie Keeper</title>
+    <style>
+      :root {
+        --primary: #24442f;
+        --primary-2: #315a3f;
+        --danger: #bb3e3e;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 6px;
+        width: 260px;
+        color: #1d2a22;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+        background: transparent;
+      }
+
+      .shell {
+        border: 1px solid rgba(47, 90, 64, 0.18);
+        background: rgba(255, 253, 250, 0.72);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(26, 39, 31, 0.08);
+        padding: 8px;
+        opacity: 0;
+        transform: translateY(-4px);
+        transition: opacity 150ms ease, transform 150ms ease;
+      }
+
+      .shell.in {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .shell.out {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+
+      .title {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--primary-2);
+        letter-spacing: 0.02em;
+        margin-bottom: 4px;
+        opacity: 0.85;
+      }
+
+      .action-btn {
+        display: block;
+        width: 100%;
+        border: 1px solid rgba(49, 90, 63, 0.22);
+        border-radius: 8px;
+        padding: 9px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        background: rgba(59, 110, 75, 0.12);
+        color: var(--primary);
+        transition: background 120ms ease;
+        font-family: inherit;
+      }
+
+      .action-btn:hover {
+        background: rgba(59, 110, 75, 0.2);
+      }
+
+      .action-btn:disabled {
+        opacity: 0.55;
+        cursor: wait;
+      }
+
+      .error {
+        margin-top: 6px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        background: rgba(187, 62, 62, 0.08);
+        color: var(--danger);
+        font-size: 11px;
+        line-height: 1.4;
+        border: 1px solid rgba(187, 62, 62, 0.2);
+        word-break: break-all;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="title">Cookie Keeper</div>
+      <button id="exportBtn" class="action-btn" type="button">Cookie 发生变化，请点击导出</button>
+      <div id="err" class="error"></div>
+    </div>
+    <script type="module" src="prompt.js"></script>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "_comment": "旧凭证 ID -> Cookie Keeper 配置域名。同步时会把 canonical entry 的 cookie 数据同时写入 alias entry。",
+  "rhino-cookies": "rhino.fintopia.tech",
+  "loan-admin-cookies": "loan-admin.fintopia.tech",
+  "loan-admin-test-cookies": "loan-admin-test.yangqianguan.com",
+  "tech-admin-cookies": "tech-admin.fintopia.tech",
+  "tech-admin-test-cookies": "tech-admin-test.yangqianguan.com",
+  "cheetah-cookies": "cheetah.fintopia.tech",
+  "cicd-cookies": "cicd.fintopia.tech",
+  "atticus-admin-cookies": "atticus-admin.fintopia.tech",
+  "ychat-cookies": "ychat.fintopia.tech",
+  "yjob-admin-cookies": "yjob-admin.fintopia.tech",
+  "yjob-admin-test-cookies": "yjob-admin-test.yangqianguan.com",
+  "fintopia-cookies": ".fintopia.tech",
+  "yangqianguan-cookies": ".yangqianguan.com",
+  "funding-admin-cookies": "funding-admin.fintopia.tech"
+}

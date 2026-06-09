@@ -140,14 +140,19 @@ if [ -n "$CLAW_API_KEY" ]; then
 fi
 echo ""
 
-# 7. 检查 Chrome Debug（可选）
-echo "🌐 检查 Chrome Debug（用于导出 Cookie）..."
-if curl -s http://localhost:9222/json/version > /dev/null 2>&1; then
-    CHROME_VERSION=$(curl -s http://localhost:9222/json/version | jq -r '.Browser' 2>/dev/null || echo "unknown")
-    echo "✅ Chrome Debug 运行中: $CHROME_VERSION"
+# 7. 检查 Cookie Keeper 快照
+echo "🍪 检查 Cookie Keeper 快照..."
+SNAPSHOT="${COOKIE_KEEPER_PATH:-$HOME/.agents/cookie-keeper/all-cookies.json}"
+if [ -f "$SNAPSHOT" ]; then
+    SNAPSHOT_AGE=$(( $(date +%s) - $(stat -f %m "$SNAPSHOT" 2>/dev/null || stat -c %Y "$SNAPSHOT" 2>/dev/null || echo 0) ))
+    echo "✅ Cookie Keeper 快照存在: $SNAPSHOT"
+    if [ "$SNAPSHOT_AGE" -gt 604800 ]; then
+        echo "⚠️  快照超过 7 天未更新，请在浏览器中访问目标站点触发同步"
+        WARNINGS=$((WARNINGS + 1))
+    fi
 else
-    echo "⚠️  Chrome Debug 未运行（端口 9222）"
-    echo "   如需导出 Cookie，请启动 Chrome Debug"
+    echo "⚠️  Cookie Keeper 快照不存在: $SNAPSHOT"
+    echo "   请安装 Cookie Keeper 扩展并配置自动同步模式"
     WARNINGS=$((WARNINGS + 1))
 fi
 echo ""

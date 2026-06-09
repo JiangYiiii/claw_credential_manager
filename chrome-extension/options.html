@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cookie Keeper 配置</title>
+    <style>
+      :root {
+        --bg: #f5f1e8;
+        --panel: rgba(255, 252, 247, 0.92);
+        --text: #1d2a22;
+        --muted: #667166;
+        --line: rgba(47, 74, 57, 0.12);
+        --primary: #24442f;
+        --success: #1f7a5a;
+        --danger: #b24141;
+        --shadow: 0 14px 34px rgba(26, 39, 31, 0.08);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(78, 124, 93, 0.1), transparent 24%),
+          linear-gradient(180deg, var(--bg) 0%, #efe7da 100%);
+      }
+      .page { max-width: 900px; margin: 0 auto; padding: 16px; }
+      .shell {
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        background: var(--panel);
+        backdrop-filter: blur(12px);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .topbar {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .topbar-main { flex: 1; min-width: 0; }
+      .topbar-main h1 { margin: 0; font-size: 18px; }
+      .topbar-main p { margin: 6px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+      .topbar-actions { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+      #saveBtn { padding: 12px 22px; font-size: 14px; }
+      #topbar-status { min-height: 16px; font-size: 12px; font-weight: 700; color: var(--success); text-align: right; white-space: nowrap; }
+      #topbar-status.error { color: var(--danger); white-space: normal; text-align: right; max-width: 220px; }
+      .content { padding: 16px; display: grid; gap: 16px; }
+      .field { display: grid; gap: 8px; }
+      .field label { font-size: 13px; font-weight: 700; }
+      textarea {
+        width: 100%; border: 1px solid rgba(66, 92, 74, 0.14); background: rgba(255,255,255,0.94);
+        color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 13px; outline: none;
+        transition: border-color 120ms ease, box-shadow 120ms ease; font-family: inherit;
+        min-height: 280px; resize: vertical; line-height: 1.5;
+      }
+      textarea:focus {
+        border-color: rgba(49, 90, 63, 0.34); box-shadow: 0 0 0 3px rgba(49, 90, 63, 0.08); background: white;
+      }
+      .subnote { font-size: 12px; color: var(--muted); line-height: 1.5; }
+      code {
+        padding: 1px 4px; border-radius: 5px; background: rgba(36, 68, 47, 0.07); color: var(--primary);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; word-break: break-all;
+      }
+      .file-card {
+        border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,0.55); padding: 12px;
+      }
+      .file-title { font-size: 13px; font-weight: 700; }
+      .file-desc { margin-top: 4px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+      .file-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+      .file-status {
+        margin-top: 8px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: rgba(36, 68, 47, 0.06);
+        border: 1px solid rgba(47, 90, 64, 0.08);
+      }
+      .file-status-label {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .file-status-name {
+        margin-top: 4px;
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--primary);
+        word-break: break-all;
+      }
+      .file-status-meta {
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .secondary-btn {
+        border: 1px solid rgba(49, 78, 53, 0.14); background: linear-gradient(180deg, #f5fbf3, #e4efe0);
+        color: var(--primary); box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+      }
+      .secondary-btn:hover {
+        background: linear-gradient(180deg, #eef8eb, #d8ead2);
+      }
+      .danger-btn {
+        border: 1px solid rgba(178, 65, 65, 0.32);
+        background: linear-gradient(180deg, #fff0f0, #f3d8d8);
+        color: #a12f2f;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.88);
+      }
+      .danger-btn:hover {
+        background: linear-gradient(180deg, #ffe7e7, #efcaca);
+      }
+      #saveBtn:hover {
+        background: linear-gradient(180deg, #467c57, #2a5037);
+        box-shadow: 0 12px 24px rgba(31, 58, 42, 0.28);
+      }
+      button {
+        border: 0; border-radius: 10px; padding: 10px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
+        background: linear-gradient(180deg, #3b6e4b, #24442f); color: white; box-shadow: 0 10px 22px rgba(31, 58, 42, 0.24);
+        transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+      }
+      button:hover {
+        transform: translateY(-1px);
+      }
+      button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.6);
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--primary);
+        cursor: pointer;
+        user-select: none;
+      }
+      .toggle-row input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--primary);
+      }
+      .radio-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.6);
+        font-size: 13px;
+        color: var(--primary);
+        cursor: pointer;
+        user-select: none;
+      }
+      .radio-row input[type="radio"] {
+        margin-top: 3px;
+        accent-color: var(--primary);
+      }
+      .mode-block { display: grid; gap: 8px; }
+      .mode-block + .mode-block { margin-top: 4px; }
+      .mode-panel {
+        margin-left: 28px;
+        padding: 10px 12px;
+        border-left: 2px solid var(--line);
+      }
+      .mode-panel[hidden] { display: none; }
+      .mode-panel > * + * { margin-top: 8px; }
+      .copy-row { display: flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap; }
+      .copy-row > .file-status-name,
+      .copy-row > code { flex: 0 1 auto; min-width: 0; }
+      .copy-btn {
+        flex-shrink: 0;
+        appearance: none;
+        background: transparent;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        cursor: pointer;
+        line-height: 1.4;
+        box-shadow: none;
+        transition: background 80ms ease, color 80ms ease, border-color 80ms ease;
+      }
+      .copy-btn:hover {
+        transform: none;
+        background: rgba(36, 68, 47, 0.08);
+        color: var(--primary);
+        border-color: rgba(47, 90, 64, 0.24);
+      }
+      .copy-btn.copied { color: var(--success); border-color: rgba(31, 122, 90, 0.4); }
+      .host-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.4;
+        background: rgba(102, 113, 102, 0.12);
+        color: var(--muted);
+        border: 1px solid rgba(102, 113, 102, 0.18);
+      }
+      .host-status .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+        flex-shrink: 0;
+      }
+      .host-status.is-ok {
+        background: rgba(31, 122, 90, 0.12);
+        color: var(--success);
+        border-color: rgba(31, 122, 90, 0.32);
+      }
+      .host-status.is-pending {
+        background: rgba(200, 138, 29, 0.14);
+        color: #8a5a10;
+        border-color: rgba(200, 138, 29, 0.34);
+      }
+      .host-status.is-error {
+        background: rgba(178, 65, 65, 0.14);
+        color: var(--danger);
+        border-color: rgba(178, 65, 65, 0.36);
+      }
+      .host-status.is-error .dot {
+        animation: host-pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes host-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.55; transform: scale(0.78); }
+      }
+      .host-status-reason {
+        margin-top: 6px;
+        font-size: 12px;
+        color: var(--danger);
+        line-height: 1.5;
+        word-break: break-all;
+      }
+      .auto-host-grid {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        column-gap: 12px;
+        row-gap: 8px;
+        align-items: center;
+      }
+      .auto-host-grid .ah-label {
+        font-size: 11px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .auto-host-grid .ah-value {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        flex-wrap: wrap;
+      }
+      .auto-host-grid .ah-id {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--primary);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        word-break: break-all;
+      }
+      .auto-host-grid .ah-cmd {
+        padding: 4px 8px;
+        font-size: 12px;
+        word-break: break-all;
+      }
+      .install-callout {
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: rgba(200, 138, 29, 0.10);
+        border: 1px solid rgba(200, 138, 29, 0.32);
+        color: #6f4a0d;
+        font-size: 12.5px;
+        line-height: 1.6;
+      }
+      .install-callout-title {
+        font-weight: 800;
+        color: #8a5a10;
+        margin-bottom: 6px;
+      }
+      .install-callout-list {
+        margin: 0;
+        padding-left: 20px;
+      }
+      .install-callout-list li + li { margin-top: 4px; }
+      .install-callout-list code {
+        background: rgba(36, 68, 47, 0.07);
+        color: var(--primary);
+      }
+      .install-callout-foot {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed rgba(200, 138, 29, 0.30);
+        font-size: 12px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="shell">
+        <section class="topbar">
+          <div class="topbar-main">
+            <h1>Cookie Keeper 配置</h1>
+            <p>选一个固定的导出文件，插件会持续更新它方便本地脚本读。</p>
+          </div>
+          <div class="topbar-actions">
+            <button id="saveBtn" type="button">保存配置</button>
+            <div id="topbar-status"></div>
+          </div>
+        </section>
+
+        <section class="content">
+          <div class="field">
+            <label>同步模式</label>
+
+            <div class="mode-block">
+              <label class="radio-row">
+                <input type="radio" name="syncMode" value="manual" />
+                <span><b>手动</b> —— 自己绑定 JSON 文件，手动点扩展图标导出</span>
+              </label>
+              <div class="mode-panel" id="manualPanel" hidden>
+                <div>
+                  <div class="file-title">固定导出文件</div>
+                  <div class="file-desc">建议选择一个固定的 <code>all-cookies.json</code> 文件作为导出目标。设置完成后，插件会持续更新这个文件，你的本地脚本只需要读取这一处即可。</div>
+                  <div class="file-actions">
+                    <button id="pickFileBtn" class="secondary-btn" type="button">选择固定文件</button>
+                    <button id="clearFileBtn" class="danger-btn" type="button">清除绑定</button>
+                  </div>
+                  <div id="fileHandleStatus" class="file-status"></div>
+                </div>
+                <label class="toggle-row">
+                  <input type="checkbox" id="autoPromptToggle" />
+                  <span>Cookie 变化时弹出同步提示</span>
+                </label>
+                <div class="subnote">
+                  开启后：配置域名下 Cookie 一变，插件会自动弹出一个迷你提示窗（只有标题和一个导出按钮），点一下即同步；关闭则不弹窗，仅用扩展图标角标提示，等你自己点图标同步。
+                </div>
+              </div>
+            </div>
+
+            <div class="mode-block">
+              <label class="radio-row">
+                <input type="radio" name="syncMode" value="auto-host" />
+                <span><b>自动</b> —— 额外安装本地 host，cookie 变更时自动写入固定文件</span>
+              </label>
+              <div class="mode-panel" id="autoHostPanel" hidden>
+                <div class="file-status auto-host-grid">
+                  <div class="ah-label">扩展 ID</div>
+                  <div class="ah-value">
+                    <span class="ah-id" id="extIdField"></span>
+                    <button type="button" class="copy-btn" data-copy-target="extIdField" title="复制扩展 ID">复制</button>
+                  </div>
+
+                  <div class="ah-label">host 状态</div>
+                  <div class="ah-value">
+                    <span id="hostStatusBadge" class="host-status"><span class="dot"></span>检测中…</span>
+                    <button type="button" id="refreshHostBtn" class="copy-btn" title="重新探测 host">刷新</button>
+                  </div>
+
+                  <div class="ah-label">安装命令</div>
+                  <div class="ah-value">
+                    <code id="installCmd" class="ah-cmd"></code>
+                    <button type="button" class="copy-btn" data-copy-target="installCmd" title="复制安装命令">复制</button>
+                  </div>
+                </div>
+                <div id="hostStatusReason" class="host-status-reason" hidden></div>
+
+                <div class="install-callout">
+                  <div class="install-callout-title">安装 Native Messaging Host</div>
+                  <ol class="install-callout-list">
+                    <li>在 <code>chrome-extension</code> 目录下打开终端。</li>
+                    <li>复制上方安装命令并执行（将扩展 ID 替换为你的 ID，配置页已自动填入）。</li>
+                    <li>安装完成后回到本页，点击 host 状态旁的 <b>刷新</b>，确认显示「已连接」。</li>
+                  </ol>
+                  <div class="install-callout-foot">Host 脚本位于 <code>host/scripts/install.sh</code>，安装后 cookie 自动写入 <code>~/.agents/cookie-keeper/all-cookies.json</code>。</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="domains">域名列表（每行一个）</label>
+            <textarea id="domains" placeholder=".example.com&#10;cheetah.fintopia.tech&#10;https://foo.example.com/"></textarea>
+            <div class="subnote">支持输入域名或完整 URL；保存时会自动提取 host。默认已经填好常用域名，你可以按需增删。</div>
+          </div>
+
+        </section>
+      </div>
+    </div>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

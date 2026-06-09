@@ -229,41 +229,27 @@ Content-Type: application/json
 DELETE /entries/{id}
 ```
 
-## Chrome Cookie 导出
+## Chrome Cookie 同步
 
-从浏览器导出 cookies 到凭证管理器，让 AI Agent 复用你的登录状态（避免单点登录互踢）。
+通过 **Cookie Keeper** 扩展自动同步浏览器登录态到 KeePass 凭证库，供 OpenClaw / MCP 复用。
 
-详细文档：[scripts/README.md](scripts/README.md)
+详细文档：[chrome-extension/INSTALL.md](chrome-extension/INSTALL.md)、[scripts/README.md](scripts/README.md)
 
 ### 快速开始
 
-1. **安装依赖**
+1. **安装 Chrome 扩展**（见 `chrome-extension/INSTALL.md`）
+2. **配置自动模式**并安装 Native Messaging Host
+3. **在浏览器登录目标网站**
+4. **同步到 KeePass**：
    ```bash
-   cd scripts
-   npm install
+   ./scripts/sync-cookie-keeper-to-vault.sh
    ```
-
-2. **创建启动器**
-   ```bash
-   ./create-app.sh
-   ```
-
-3. **启动 Chrome Debug**
-   - 在 Alfred/Spotlight 搜索 `Chrome Debug`
-   - 或双击 `~/Applications/Chrome Debug.app`
-
-4. **登录网站** 后运行导出
-   ```bash
-   ./export-all-cookies.sh
-   ```
-
-5. **在 OpenClaw 中使用**
+5. **在 OpenClaw 中使用**：
    ```javascript
    const credential = await mcpClient.callTool('get_credential', {
-     id: 'github-cookies'
+     id: 'rhino-fintopia-tech-cookies'
    });
    const cookies = JSON.parse(credential.password);
-   await context.addCookies(cookies);
    ```
 
 ## MCP 集成

@@ -1,20 +1,27 @@
 {
   "manifest_version": 3,
-  "name": "Claw Cookie Exporter",
-  "version": "1.0.0",
-  "description": "导出浏览器 Cookies 到 Claw Credential Manager",
-  "permissions": [
-    "cookies",
-    "tabs",
-    "activeTab"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
-  "action": {
-    "default_popup": "popup.html"
-  },
+  "name": "Cookie Keeper",
+  "version": "0.4.5",
+  "description": "Keep cookies from multiple configured domains in one fixed JSON file. Supports manual export and fully-automated sync via a local Native Messaging host.",
+  "permissions": ["cookies", "storage", "alarms", "notifications", "nativeMessaging"],
+  "host_permissions": ["<all_urls>"],
   "background": {
-    "service_worker": "background.js"
-  }
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "icons/cookie-16.png",
+    "32": "icons/cookie-32.png",
+    "48": "icons/cookie-48.png",
+    "128": "icons/cookie-128.png"
+  },
+  "action": {
+    "default_title": "Cookie Keeper",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/cookie-16.png",
+      "32": "icons/cookie-32.png"
+    }
+  },
+  "options_page": "options.html"
 }

@@ -1,150 +1,79 @@
-# Claw Cookie Exporter 安装指南
+# Cookie Keeper 安装指南
 
-## 方式1: 加载已解压的扩展程序 (开发模式)
+> 飞书文档：https://fintopia.feishu.cn/wiki/EYOxwym9xi07ovk1TFTcmLtznXe  
+> 源码仓库：`git@gitlab.yangqianguan.com:ruiliangwu/cookie-keeper.git`（v0.4.5）
 
-**适合**: 开发测试、需要经常修改代码
+本目录为 **Cookie Keeper** Chrome 扩展，替代旧的 Claw Cookie Exporter。
 
-### 安装步骤
+## 1. 安装 Chrome 扩展
 
-1. 打开 Chrome 浏览器
-2. 访问 `chrome://extensions/`
-3. **开启右上角"开发者模式"**
-4. 点击 **"加载已解压的扩展程序"**
-5. 选择 `chrome-extension` 目录
-
-### 注意事项
-- ⚠️ 每次启动 Chrome 会提示"请停用以开发者模式运行的扩展程序"
-- ✅ 可以直接修改代码，刷新扩展即可生效
-
----
-
-## 方式2: 打包扩展程序 (生产模式) 【推荐】
-
-**适合**: 日常使用、团队分发
-
-### 步骤1: 打包扩展
-
-1. 打开 Chrome 浏览器
-2. 访问 `chrome://extensions/`
-3. 开启"开发者模式"
-4. 点击 **"打包扩展程序"**
-5. **扩展程序根目录**: 选择 `chrome-extension` 目录
-6. **私有密钥文件**: 留空（首次打包）
-7. 点击"打包扩展程序"
-
-会生成两个文件：
-- `chrome-extension.crx` - 扩展安装包
-- `chrome-extension.pem` - 私钥文件（**务必保管好，用于更新**）
-
-### 步骤2: 安装 .crx 文件
-
-**方法A: 拖拽安装**
 1. 打开 `chrome://extensions/`
-2. 将 `chrome-extension.crx` 拖入页面
-3. 点击"添加扩展程序"
+2. **移除** 旧的「Claw Cookie Exporter」（若仍存在）
+3. 开启右上角 **开发者模式**
+4. 点击 **加载已解压的扩展程序**
+5. 选择本目录
+6. 确认扩展列表中出现 **Cookie Keeper**（v0.4.5）
 
-**方法B: 开发者模式安装（Chrome 限制较多时）**
-1. 打开 `chrome://extensions/`
-2. 开启"开发者模式"
-3. 将 `.crx` 文件拖入
-4. 安装后可以关闭开发者模式
+## 2. 配置同步模式与域名
 
-### 步骤3: 更新扩展（修改代码后）
+1. 点击工具栏 Cookie Keeper 图标 → **配置**
+2. 选择同步模式：
+   - **手动**：绑定一个固定 JSON 文件，需要点击「立即导出」
+   - **自动（推荐）**：安装 Native Messaging Host，cookie 变更后自动写入 `~/.agents/cookie-keeper/all-cookies.json`
+3. 检查 **域名列表**（已预置 fintopia / yangqianguan 等常用域名）
+4. 点击 **保存配置**
 
-1. 修改 `chrome-extension/` 中的代码
-2. **修改版本号** `manifest.json` 中 `version` 字段，如 `1.0.0` → `1.0.1`
-3. 打包时 **必须选择之前的 .pem 文件**
-4. 生成新的 .crx 文件
-5. 用户安装新的 .crx 会自动覆盖旧版本
+## 3. 安装本地 Host（仅自动模式）
 
----
-
-## 方式3: 快速打包脚本
-
-创建自动打包脚本 `build.sh`:
+1. 在配置页选择 **自动** 模式
+2. 复制面板中的 **扩展 ID**
+3. 在本机执行：
 
 ```bash
-#!/bin/bash
-# 自动打包Chrome扩展
-
-# 检查Chrome是否安装
-CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-if [ ! -f "$CHROME" ]; then
-    echo "❌ Chrome 未安装"
-    exit 1
-fi
-
-# 打包
-"$CHROME" --pack-extension=chrome-extension --pack-extension-key=chrome-extension.pem 2>/dev/null
-
-if [ -f chrome-extension.crx ]; then
-    echo "✅ 打包成功: chrome-extension.crx"
-    ls -lh chrome-extension.crx
-else
-    echo "❌ 打包失败"
-    exit 1
-fi
+cd /Users/jiangyi/Documents/codedev/claw_credential_manager/chrome-extension
+bash host/scripts/install.sh --ext-id <EXT_ID>
 ```
 
-运行: `bash build.sh`
+4. 回到配置页，点击 host 状态旁的 **刷新**，看到 **已连接**
+5. 在目标网站登录后，cookie 自动写入 `~/.agents/cookie-keeper/all-cookies.json`
 
----
+## 4. 同步到 KeePass 凭证库
 
-## 团队分发
+扩展只负责写入本地 JSON。要将 cookie 导入 credential-manager（KeePass），运行项目根目录的同步脚本：
 
-### 1. 本地分发
-将 `chrome-extension.crx` 发送给团队成员，直接拖拽安装
-
-### 2. 内网服务器
 ```bash
-# 上传到内网服务器
-scp chrome-extension.crx user@server:/var/www/html/
-
-# 团队访问
-http://your-server/chrome-extension.crx
+cd /Users/jiangyi/Documents/codedev/claw_credential_manager
+./scripts/sync-cookie-keeper-to-vault.sh
 ```
 
-### 3. Chrome Web Store (公开发布)
-如需公开发布，需要：
-1. 注册 Chrome 开发者账号 ($5 一次性费用)
-2. 上传 .zip 压缩包
-3. 填写商店信息
-4. 提交审核
+同步后可通过 MCP `get_credential("rhino-fintopia-tech-cookies")` 获取。
 
----
+## 5. 验证
 
-## 配置说明
+```bash
+# 检查 host
+test -f ~/.agents/cookie-keeper/host/host.sh && echo "host ok"
 
-安装后首次打开扩展需要配置：
+# 检查快照
+ls -la ~/.agents/cookie-keeper/all-cookies.json
 
-- **API 地址**: `http://localhost:8002` (默认)
-- **API Key**: 从容器环境变量或配置文件获取
+# 同步并验证 vault entry
+./scripts/sync-cookie-keeper-to-vault.sh
+curl -s http://127.0.0.1:8002/entries/rhino-fintopia-tech-cookies \
+  -H "Authorization: Bearer $CLAW_API_KEY" | jq '.id, .metadata.cookie_count'
+```
 
-配置保存在浏览器 localStorage，无需每次输入。
+## 6. 打包分发
 
----
+```bash
+bash build-pack.sh   # 生成 dist/cookie-keeper-<version>.zip
+bash build.sh        # 额外尝试生成 .crx
+```
 
 ## 故障排查
 
-### 问题1: 无法拖拽安装 .crx
-**原因**: Chrome 安全策略
-**解决**: 使用开发者模式安装，或修改文件扩展名为 .zip 后解压安装
+- **host 未连接**：确认 Node.js >= 18，重新运行 `host/scripts/install.sh --ext-id <ID>`
+- **导出失败：没有文件写入权限**：Chrome 版本建议 146+
+- **vault 中无 cookie**：确认已运行 `sync-cookie-keeper-to-vault.sh`
 
-### 问题2: "程序包无效"
-**原因**: manifest.json 格式错误
-**解决**: 检查 JSON 语法，确保版本号格式正确
-
-### 问题3: API 调用失败
-**原因**: 容器未启动或端口不正确
-**解决**: 
-```bash
-# 检查容器状态
-podman ps | grep credential-manager
-
-# 检查端口
-curl http://localhost:8002/entries
-```
-
-### 问题4: CORS 错误
-**原因**: API 未允许跨域
-**解决**: API 已配置 CORS，如仍有问题检查 API 服务器日志
+Host 诊断：`bash host/scripts/doctor.sh`
