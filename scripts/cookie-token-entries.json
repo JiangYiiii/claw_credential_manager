@@ -1,0 +1,21 @@
+{
+  "_comment": "从 Cookie Keeper 快照提取单个 token 写入独立 entry（Funding Admin CLI / Keychain 使用）",
+  "funding-admin.fintopia.tech": [
+    {
+      "entryId": "funding-admin-prod",
+      "cookieName": "YQG_UNITE_TOKEN_PROD",
+      "name": "Funding Admin Production",
+      "environment": "production",
+      "keychainService": "funding-admin-prod",
+      "keychainAccount": "YQG_UNITE_TOKEN"
+    },
+    {
+      "entryId": "funding-admin-test",
+      "cookieName": "YQG_UNITE_TOKEN_TEST",
+      "name": "Funding Admin Test",
+      "environment": "test",
+      "keychainService": "funding-admin-test",
+      "keychainAccount": "YQG_UNITE_TOKEN"
+    }
+  ]
+}

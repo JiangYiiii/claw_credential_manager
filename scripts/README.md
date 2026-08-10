@@ -51,6 +51,10 @@ cd scripts && npm run sync-cookies
 
 新增别名：编辑 `scripts/cookie-entry-aliases.json`，格式为 `"别名ID": "配置域名"`。
 
+## Token entry（Funding Admin / Keychain）
+
+Funding Admin CLI 和 repay-troubleshoot 使用独立 token entry（`funding-admin-prod` / `funding-admin-test`），不是 `*-cookies` entry。同步脚本会从 cookie 中提取 `YQG_UNITE_TOKEN_*` 并更新 vault + macOS Keychain，配置见 `cookie-token-entries.json`。
+
 ## 定时同步
 
 ### OpenClaw 定时任务（推荐）
